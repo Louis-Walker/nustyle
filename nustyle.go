@@ -53,19 +53,17 @@ func main() {
 }
 
 func weeklyUpdater() {
-	// isOldPlaylist := false
+	isOldPlaylist := false
 
-	// for {
-	// 	if time.Now().Day() == 2 {
-	// 		isOldPlaylist = true
-	// 	}
+	for {
+		if time.Now().Day() == 2 {
+			isOldPlaylist = true
+		}
 
-	// 	if isOldPlaylist && time.Now().Day() == 1 {
-	// 		updatePlaylist()
-	// 	}
+		if isOldPlaylist && time.Now().Day() == 1 {
+			updatePlaylist()
+		}
 
-	// 	time.Sleep(time.Hour * 12)
-	// }
-
-	updatePlaylist()
+		time.Sleep(time.Hour * 12)
+	}
 }
