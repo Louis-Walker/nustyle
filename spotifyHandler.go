@@ -25,7 +25,7 @@ var (
 )
 
 func initSpotifyClient() *spotify.Client {
-	http.HandleFunc("/callback", completeAuth)
+	http.HandleFunc("/auth", completeAuth)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Got req for:", r.URL.String())
 	})

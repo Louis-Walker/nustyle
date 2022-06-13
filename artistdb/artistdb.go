@@ -48,7 +48,7 @@ func GetAllArtists(db *sql.DB) []m.Artist {
 
 		artists = append(artists, a)
 	}
-	fmt.Printf("HEY %v", artists[0].LastTrackDateTime)
+
 	return artists
 }
 
