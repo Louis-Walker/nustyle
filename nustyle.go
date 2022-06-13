@@ -27,16 +27,18 @@ func main() {
 			for _, artist := range artists {
 				trackIDs := getNewestTracks(artist)
 
-				snapshotID, err := spo.AddTracksToPlaylist(ctx, PLAYLIST_ID, trackIDs...)
-				if err != nil {
-					fmt.Println(err)
-				} else {
-					artistdb.UpdateLastTrack(artistsDB, artist.SUI)
-					fmt.Printf("Updated: %v, SID: %v", artist.Name, snapshotID)
+				if len(trackIDs) > 0 {
+					snapshotID, err := spo.AddTracksToPlaylist(ctx, PLAYLIST_ID, trackIDs...)
+					if err != nil {
+						fmt.Printf("ERROR: %v", err)
+					} else {
+						artistdb.UpdateLastTrack(artistsDB, artist.SUI)
+						fmt.Printf("Updated: %v, SID: %v", artist.Name, snapshotID)
+					}
 				}
 			}
 
-			time.Sleep(60 * time.Minute)
+			time.Sleep(time.Minute * 60)
 		}
 	}()
 
@@ -65,5 +67,11 @@ func weeklyUpdater() {
 		}
 
 		time.Sleep(time.Hour * 12)
+	}
+}
+
+func printError(err error) {
+	if err != nil {
+		fmt.Printf("ERROR: %v", err)
 	}
 }

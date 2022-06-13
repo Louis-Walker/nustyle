@@ -34,9 +34,7 @@ func initSpotifyClient() *spotify.Client {
 	})
 	go func() {
 		err := http.ListenAndServe(":8080", nil)
-		if err != nil {
-			log.Fatal(err)
-		}
+		printError(err)
 	}()
 
 	url := auth.AuthURL(state)
@@ -45,9 +43,7 @@ func initSpotifyClient() *spotify.Client {
 	client := <-ch
 
 	user, err := client.CurrentUser(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
+	printError(err)
 	fmt.Println("You are logged in as:", user.ID)
 
 	return client
@@ -57,18 +53,14 @@ func getNewestTracks(a m.Artist) []spotify.ID {
 	var SUI spotify.ID = spotify.ID(a.SUI)
 
 	albums, err := spo.GetArtistAlbums(ctx, SUI, []spotify.AlbumType{1, 2})
-	if err != nil {
-		println("SPO/GetArtistAlbums: %v", err)
-	}
+	printError(err)
 
 	var newTracks []spotify.ID
 
 	for _, album := range albums.Albums[:4] {
 		if album.ReleaseDateTime().After(a.LastTrackDateTime) {
 			tracks, err := spo.GetAlbumTracks(ctx, album.ID)
-			if err != nil {
-				println("SPO/GetTracks: %v", err)
-			}
+			printError(err)
 
 			for _, track := range tracks.Tracks {
 				newTracks = append(newTracks, track.ID)
@@ -81,9 +73,7 @@ func getNewestTracks(a m.Artist) []spotify.ID {
 
 func updatePlaylist() {
 	playlist, err := spo.GetPlaylist(ctx, PLAYLIST_ID)
-	if err != nil {
-		log.Fatal(err)
-	}
+	printError(err)
 	oldName := playlist.Name
 
 	// CHANGE NAME
@@ -91,22 +81,16 @@ func updatePlaylist() {
 	newName := fmt.Sprintf("Nustyle %v/%v", nowDay, int(nowMonth))
 
 	err = spo.ChangePlaylistName(ctx, PLAYLIST_ID, newName)
-	if err != nil {
-		log.Fatal(err)
-	}
+	printError(err)
 
 	// COPY TO NEW PLAYLIST
 	var s *spotify.FullPlaylist
 	s, err = spo.CreatePlaylistForUser(ctx, USER_ID, oldName, "", false, false)
-	if err != nil {
-		log.Fatal(err)
-	}
+	printError(err)
 
 	var tracks *spotify.PlaylistItemPage
 	tracks, err = spo.GetPlaylistItems(ctx, PLAYLIST_ID)
-	if err != nil {
-		log.Fatal(err)
-	}
+	printError(err)
 
 	var trackIDs []spotify.ID
 	for i := 0; i < tracks.Total; i++ {
@@ -117,9 +101,7 @@ func updatePlaylist() {
 
 	//CLEAN MAIN PLAYLIST
 	_, err = spo.RemoveTracksFromPlaylist(ctx, PLAYLIST_ID, trackIDs...)
-	if err != nil {
-		log.Fatal(err)
-	}
+	printError(err)
 }
 
 func completeAuth(w http.ResponseWriter, r *http.Request) {
