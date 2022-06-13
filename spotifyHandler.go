@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/zmb3/spotify/v2"
 	spotifyauth "github.com/zmb3/spotify/v2/auth"
+
+	m "example.com/nustyle/model"
 )
 
 var (
@@ -48,6 +51,75 @@ func initSpotifyClient() *spotify.Client {
 	fmt.Println("You are logged in as:", user.ID)
 
 	return client
+}
+
+func getNewestTracks(a m.Artist) []spotify.ID {
+	var SUI spotify.ID = spotify.ID(a.SUI)
+
+	albums, err := spo.GetArtistAlbums(ctx, SUI, []spotify.AlbumType{1, 2})
+	if err != nil {
+		println("SPO/GetArtistAlbums: %v", err)
+	}
+
+	var newTracks []spotify.ID
+
+	for _, album := range albums.Albums[:4] {
+		if album.ReleaseDateTime().After(a.LastTrackDateTime) {
+			tracks, err := spo.GetAlbumTracks(ctx, album.ID)
+			if err != nil {
+				println("SPO/GetTracks: %v", err)
+			}
+
+			for _, track := range tracks.Tracks {
+				newTracks = append(newTracks, track.ID)
+			}
+		}
+	}
+
+	return newTracks
+}
+
+func updatePlaylist() {
+	playlist, err := spo.GetPlaylist(ctx, PLAYLIST_ID)
+	if err != nil {
+		log.Fatal(err)
+	}
+	oldName := playlist.Name
+
+	// CHANGE NAME
+	_, nowMonth, nowDay := time.Now().Date()
+	newName := fmt.Sprintf("Nustyle %v/%v", nowDay, int(nowMonth))
+
+	err = spo.ChangePlaylistName(ctx, PLAYLIST_ID, newName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// COPY TO NEW PLAYLIST
+	var s *spotify.FullPlaylist
+	s, err = spo.CreatePlaylistForUser(ctx, USER_ID, oldName, "", false, false)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var tracks *spotify.PlaylistItemPage
+	tracks, err = spo.GetPlaylistItems(ctx, PLAYLIST_ID)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var trackIDs []spotify.ID
+	for i := 0; i < tracks.Total; i++ {
+		tID := tracks.Items[i].Track.Track.ID
+		trackIDs = append(trackIDs, tID)
+	}
+	spo.AddTracksToPlaylist(ctx, s.ID, trackIDs...)
+
+	//CLEAN MAIN PLAYLIST
+	_, err = spo.RemoveTracksFromPlaylist(ctx, PLAYLIST_ID, trackIDs...)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func completeAuth(w http.ResponseWriter, r *http.Request) {

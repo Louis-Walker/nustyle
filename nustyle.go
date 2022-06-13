@@ -5,14 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/zmb3/spotify/v2"
-
 	"example.com/nustyle/artistdb"
-
-	m "example.com/nustyle/model"
 )
 
 const REDIRECT_URL = "http://localhost:8080/auth"
+const USER_ID = "m05hi"
 const PLAYLIST_ID = "0TdRzSP9GMdDcnuZd7wSTE"
 const SPOTIFY_ID = "b1c55051e57c47c28659d3e0d12fc875"
 const SPOTIFY_SECRET = "bc64e49696ec4182bd92514b24c15ddd"
@@ -43,6 +40,8 @@ func main() {
 		}
 	}()
 
+	go weeklyUpdater()
+
 	for {
 		var input string
 		fmt.Scan(&input)
@@ -53,28 +52,20 @@ func main() {
 	}
 }
 
-func getNewestTracks(a m.Artist) []spotify.ID {
-	var SUI spotify.ID = spotify.ID(a.SUI)
+func weeklyUpdater() {
+	// isOldPlaylist := false
 
-	albums, err := spo.GetArtistAlbums(ctx, SUI, []spotify.AlbumType{1, 2})
-	if err != nil {
-		println("SPO/GetArtistAlbums: %v", err)
-	}
+	// for {
+	// 	if time.Now().Day() == 2 {
+	// 		isOldPlaylist = true
+	// 	}
 
-	var newTracks []spotify.ID
+	// 	if isOldPlaylist && time.Now().Day() == 1 {
+	// 		updatePlaylist()
+	// 	}
 
-	for _, album := range albums.Albums[:4] {
-		if album.ReleaseDateTime().After(a.LastTrackDateTime) {
-			tracks, err := spo.GetAlbumTracks(ctx, album.ID)
-			if err != nil {
-				println("SPO/GetTracks: %v", err)
-			}
+	// 	time.Sleep(time.Hour * 12)
+	// }
 
-			for _, track := range tracks.Tracks {
-				newTracks = append(newTracks, track.ID)
-			}
-		}
-	}
-
-	return newTracks
+	updatePlaylist()
 }
