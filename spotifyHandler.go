@@ -29,9 +29,8 @@ var (
 
 func initSpotifyClient() *spotify.Client {
 	http.HandleFunc("/auth", completeAuth)
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		log.Println("Got req for:", r.URL.String())
-	})
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
+
 	go func() {
 		err := http.ListenAndServe(":8080", nil)
 		printError(err)

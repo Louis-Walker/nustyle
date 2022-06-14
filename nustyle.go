@@ -24,6 +24,7 @@ func main() {
 		for {
 			artists := artistdb.GetAllArtists(artistsDB)
 
+			fmt.Println("[X] Initiating Release Scanner [X]")
 			for _, artist := range artists {
 				trackIDs := getNewestTracks(artist)
 
@@ -36,11 +37,13 @@ func main() {
 						fmt.Printf("Updated: %v, SID: %v", artist.Name, snapshotID)
 					}
 				}
+
 				fmt.Println(artist.Name)
 				time.Sleep(time.Second / 3)
 			}
 
-			time.Sleep(time.Minute * 60)
+			fmt.Printf("[X] Scan Successful - %v Artists Scanned [X]\n", len(artists))
+			time.Sleep(time.Minute * 30)
 		}
 	}()
 
