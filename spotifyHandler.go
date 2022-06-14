@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/zmb3/spotify/v2"
@@ -20,8 +22,8 @@ var (
 			spotifyauth.ScopePlaylistModifyPublic,
 			spotifyauth.ScopePlaylistModifyPrivate,
 		),
-		spotifyauth.WithClientID(SPOTIFY_ID),
-		spotifyauth.WithClientSecret(SPOTIFY_SECRET),
+		spotifyauth.WithClientID(os.Getenv("SPOTIFY_ID")),
+		spotifyauth.WithClientSecret(os.Getenv("SPOTIFY_SECRET")),
 	)
 	ch    = make(chan *spotify.Client)
 	state = "abc123"
@@ -41,7 +43,7 @@ func initSpotifyClient() *spotify.Client {
 
 	client := <-ch
 
-	user, err := client.CurrentUser(ctx)
+	user, err := client.CurrentUser(context.Background())
 	printError(err)
 	fmt.Println("You are logged in as:", user.ID)
 
@@ -51,18 +53,41 @@ func initSpotifyClient() *spotify.Client {
 func getNewestTracks(a m.Artist) []spotify.ID {
 	var SUI spotify.ID = spotify.ID(a.SUI)
 
-	albums, err := spo.GetArtistAlbums(ctx, SUI, []spotify.AlbumType{1, 2})
+	albums, err := spo.GetArtistAlbums(context.Background(), SUI, []spotify.AlbumType{1, 2})
 	printError(err)
 
 	var newTracks []spotify.ID
 
-	for _, album := range albums.Albums[:getCount(albums.Total)] {
-		if album.ReleaseDateTime().After(a.LastTrackDateTime) {
-			tracks, err := spo.GetAlbumTracks(ctx, album.ID)
+	if albums.Albums == nil {
+		return newTracks
+	}
+
+	lastTrackBeforeDate := func() time.Time {
+		n := time.Now()
+
+		timeBuilder := fmt.Sprintf("%v-%v-%v %v:%v:%v+00:00", n.Year(), int(n.Month()), n.Day(), 0, 0, 0)
+
+		newTime, err := time.Parse("2006-1-2 15:4:5+00:00", timeBuilder)
+		if err != nil {
 			printError(err)
+		}
+
+		newTime = newTime.Add(-time.Minute * 1)
+
+		return newTime
+	}()
+
+	for _, album := range albums.Albums[:intLimiter(albums.Total)] {
+		if album.ReleaseDateTime().After(lastTrackBeforeDate) {
+			tracks, err := spo.GetAlbumTracks(context.Background(), album.ID)
+			if err != nil {
+				printError(err)
+			}
 
 			for _, track := range tracks.Tracks {
-				newTracks = append(newTracks, track.ID)
+				if !trackAdded(playlistTracks, track.ID) {
+					newTracks = append(newTracks, track.ID)
+				}
 			}
 		}
 	}
@@ -71,24 +96,24 @@ func getNewestTracks(a m.Artist) []spotify.ID {
 }
 
 func updatePlaylist() {
-	playlist, err := spo.GetPlaylist(ctx, PLAYLIST_ID)
+	playlist, err := spo.GetPlaylist(context.Background(), PLAYLIST_ID)
 	printError(err)
 	oldName := playlist.Name
 
 	// CHANGE NAME
 	_, nowMonth, nowDay := time.Now().Date()
-	newName := fmt.Sprintf("Nustyle %v/%v", nowDay, int(nowMonth))
+	newName := fmt.Sprintf("Nustyle %v/%v [DEV]", nowDay, int(nowMonth))
 
-	err = spo.ChangePlaylistName(ctx, PLAYLIST_ID, newName)
+	err = spo.ChangePlaylistName(context.Background(), PLAYLIST_ID, newName)
 	printError(err)
 
 	// COPY TO NEW PLAYLIST
 	var s *spotify.FullPlaylist
-	s, err = spo.CreatePlaylistForUser(ctx, USER_ID, oldName, "", false, false)
+	s, err = spo.CreatePlaylistForUser(context.Background(), USER_ID, oldName, "", false, false)
 	printError(err)
 
 	var tracks *spotify.PlaylistItemPage
-	tracks, err = spo.GetPlaylistItems(ctx, PLAYLIST_ID)
+	tracks, err = spo.GetPlaylistItems(context.Background(), PLAYLIST_ID)
 	printError(err)
 
 	var trackIDs []spotify.ID
@@ -96,10 +121,10 @@ func updatePlaylist() {
 		tID := tracks.Items[i].Track.Track.ID
 		trackIDs = append(trackIDs, tID)
 	}
-	spo.AddTracksToPlaylist(ctx, s.ID, trackIDs...)
+	spo.AddTracksToPlaylist(context.Background(), s.ID, trackIDs...)
 
 	//CLEAN MAIN PLAYLIST
-	_, err = spo.RemoveTracksFromPlaylist(ctx, PLAYLIST_ID, trackIDs...)
+	_, err = spo.RemoveTracksFromPlaylist(context.Background(), PLAYLIST_ID, trackIDs...)
 	printError(err)
 }
 
@@ -115,12 +140,24 @@ func completeAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// use the token to get an authenticated client
-	client := spotify.New(auth.Client(r.Context(), tok))
+	client := spotify.New(auth.Client(r.Context(), tok), spotify.WithRetry(true))
 	fmt.Fprintf(w, "Login Completed!")
 	ch <- client
 }
 
-func getCount(c int) int {
+func trackAdded(tracks *spotify.PlaylistTrackPage, id spotify.ID) bool {
+	added := false
+
+	for i := 0; i < tracks.Total; i++ {
+		if tracks.Tracks[i].Track.ID == id {
+			added = true
+		}
+	}
+
+	return added
+}
+
+func intLimiter(c int) int {
 	if c < 4 {
 		return c
 	} else {

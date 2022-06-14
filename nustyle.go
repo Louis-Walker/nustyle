@@ -2,34 +2,62 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"os"
 	"time"
 
 	"example.com/nustyle/artistdb"
+	"github.com/zmb3/spotify/v2"
 )
 
-const REDIRECT_URL = "http://localhost:8080/auth"
-const USER_ID = "m05hi"
-const PLAYLIST_ID = "0TdRzSP9GMdDcnuZd7wSTE"
-const SPOTIFY_ID = "b1c55051e57c47c28659d3e0d12fc875"
-const SPOTIFY_SECRET = "bc64e49696ec4182bd92514b24c15ddd"
+var (
+	REDIRECT_URL            = "http://localhost:8080/auth"
+	PLAYLIST_ID  spotify.ID = "3uzLhwcuH1KpmeCPWMqnQl"
+	USER_ID                 = "m05hi"
 
-var ctx = context.Background()
-var spo = initSpotifyClient()
+	ctx            = context.Background()
+	spo            *spotify.Client
+	artistsDB      *sql.DB
+	playlistTracks *spotify.PlaylistTrackPage
+)
 
 func main() {
-	artistsDB := artistdb.OpenConn("./artistdb/artists.db")
+	if len(os.Args) > 1 {
+		if os.Args[1] == "-p" {
+			REDIRECT_URL = "http://localhost:8080/auth"
+			PLAYLIST_ID = "0TdRzSP9GMdDcnuZd7wSTE"
+
+			fmt.Println("[NU] Initialising in PRODUCTION mode. Do you wish to continue? [y/n]")
+			var input string
+			_, err := fmt.Scan(&input)
+			printError(err)
+
+			if input == "n" {
+				os.Exit(1)
+			}
+		}
+	}
+
+	spo = initSpotifyClient()
+	artistsDB = artistdb.OpenConn("./artistdb/artists.db")
 
 	go func() {
 		for {
+			fmt.Println("[NU] Initiating Release Scanner")
 			artists := artistdb.GetAllArtists(artistsDB)
 
-			fmt.Println("[X] Initiating Release Scanner [X]")
+			var err error
+			playlistTracks, err = spo.GetPlaylistTracks(context.Background(), PLAYLIST_ID)
+			if err != nil {
+				printError(err)
+			}
+
 			for _, artist := range artists {
 				trackIDs := getNewestTracks(artist)
 
 				if len(trackIDs) > 0 {
-					snapshotID, err := spo.AddTracksToPlaylist(ctx, PLAYLIST_ID, trackIDs...)
+					snapshotID, err := spo.AddTracksToPlaylist(context.Background(), PLAYLIST_ID, trackIDs...)
 					if err != nil {
 						fmt.Printf("ERROR: %v", err)
 					} else {
@@ -39,10 +67,10 @@ func main() {
 				}
 
 				fmt.Println(artist.Name)
-				time.Sleep(time.Second / 3)
+				// time.Sleep(time.Second / 3)
 			}
 
-			fmt.Printf("[X] Scan Successful - %v Artists Scanned [X]\n", len(artists))
+			fmt.Printf("[NU] Scan Completed At %v - %v Artists Scanned\n", time.Now().Format("2006-01-02 3:4:5 pm"), len(artists))
 			time.Sleep(time.Minute * 30)
 		}
 	}()
@@ -69,6 +97,7 @@ func weeklyUpdater() {
 
 		if isOldPlaylist && time.Now().Day() == 1 {
 			updatePlaylist()
+			fmt.Printf("[NU] New Playlist Created - Main Playlist Cleared\n")
 		}
 
 		time.Sleep(time.Hour * 12)
