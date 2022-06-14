@@ -27,9 +27,12 @@ var (
 	)
 	ch    = make(chan *spotify.Client)
 	state = "abc123"
+	ctx   context.Context
 )
 
 func initSpotifyClient() *spotify.Client {
+	ctx = context.Background()
+
 	http.HandleFunc("/auth", completeAuth)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
 
@@ -39,11 +42,11 @@ func initSpotifyClient() *spotify.Client {
 	}()
 
 	url := auth.AuthURL(state)
-	fmt.Println("Please log in to Spotify by visiting the following page in your browser:", url)
+	fmt.Println("Login URL:\n", url)
 
 	client := <-ch
 
-	user, err := client.CurrentUser(context.Background())
+	user, err := client.CurrentUser(ctx)
 	printError(err)
 	fmt.Println("You are logged in as:", user.ID)
 
@@ -51,38 +54,34 @@ func initSpotifyClient() *spotify.Client {
 }
 
 func getNewestTracks(a m.Artist) []spotify.ID {
-	var SUI spotify.ID = spotify.ID(a.SUI)
-
-	albums, err := spo.GetArtistAlbums(context.Background(), SUI, []spotify.AlbumType{1, 2})
-	printError(err)
-
 	var newTracks []spotify.ID
+
+	albums, err := spo.GetArtistAlbums(ctx, spotify.ID(a.SUI), []spotify.AlbumType{1, 2})
+	printError(err)
 
 	if albums.Albums == nil {
 		return newTracks
 	}
 
-	lastTrackBeforeDate := func() time.Time {
-		n := time.Now()
+	isNew := func(tDate time.Time, lDate time.Time) bool {
+		lElapsed := lDate.Truncate(time.Hour * 24).Add(-(time.Minute * 1))
 
-		timeBuilder := fmt.Sprintf("%v-%v-%v %v:%v:%v+00:00", n.Year(), int(n.Month()), n.Day(), 0, 0, 0)
-
-		newTime, err := time.Parse("2006-1-2 15:4:5+00:00", timeBuilder)
-		if err != nil {
-			printError(err)
+		if tDate.After(lElapsed) {
+			return true
 		}
 
-		newTime = newTime.Add(-time.Minute * 1)
+		return false
+	}
 
-		return newTime
-	}()
+	for i, album := range albums.Albums {
+		// Limit amount of checks... don't need to check whole library
+		if i >= 4 {
+			break
+		}
 
-	for _, album := range albums.Albums[:intLimiter(albums.Total)] {
-		if album.ReleaseDateTime().After(lastTrackBeforeDate) {
-			tracks, err := spo.GetAlbumTracks(context.Background(), album.ID)
-			if err != nil {
-				printError(err)
-			}
+		if isNew(album.ReleaseDateTime(), a.LastTrackDateTime) {
+			tracks, err := spo.GetAlbumTracks(ctx, album.ID)
+			printError(err)
 
 			for _, track := range tracks.Tracks {
 				if !trackAdded(playlistTracks, track.ID) {
@@ -96,7 +95,7 @@ func getNewestTracks(a m.Artist) []spotify.ID {
 }
 
 func updatePlaylist() {
-	playlist, err := spo.GetPlaylist(context.Background(), PLAYLIST_ID)
+	playlist, err := spo.GetPlaylist(ctx, PLAYLIST_ID)
 	printError(err)
 	oldName := playlist.Name
 
@@ -104,16 +103,16 @@ func updatePlaylist() {
 	_, nowMonth, nowDay := time.Now().Date()
 	newName := fmt.Sprintf("Nustyle %v/%v [DEV]", nowDay, int(nowMonth))
 
-	err = spo.ChangePlaylistName(context.Background(), PLAYLIST_ID, newName)
+	err = spo.ChangePlaylistName(ctx, PLAYLIST_ID, newName)
 	printError(err)
 
 	// COPY TO NEW PLAYLIST
 	var s *spotify.FullPlaylist
-	s, err = spo.CreatePlaylistForUser(context.Background(), USER_ID, oldName, "", false, false)
+	s, err = spo.CreatePlaylistForUser(ctx, USER_ID, oldName, "", false, false)
 	printError(err)
 
 	var tracks *spotify.PlaylistItemPage
-	tracks, err = spo.GetPlaylistItems(context.Background(), PLAYLIST_ID)
+	tracks, err = spo.GetPlaylistItems(ctx, PLAYLIST_ID)
 	printError(err)
 
 	var trackIDs []spotify.ID
@@ -121,10 +120,10 @@ func updatePlaylist() {
 		tID := tracks.Items[i].Track.Track.ID
 		trackIDs = append(trackIDs, tID)
 	}
-	spo.AddTracksToPlaylist(context.Background(), s.ID, trackIDs...)
+	spo.AddTracksToPlaylist(ctx, s.ID, trackIDs...)
 
 	//CLEAN MAIN PLAYLIST
-	_, err = spo.RemoveTracksFromPlaylist(context.Background(), PLAYLIST_ID, trackIDs...)
+	_, err = spo.RemoveTracksFromPlaylist(ctx, PLAYLIST_ID, trackIDs...)
 	printError(err)
 }
 
@@ -146,21 +145,11 @@ func completeAuth(w http.ResponseWriter, r *http.Request) {
 }
 
 func trackAdded(tracks *spotify.PlaylistTrackPage, id spotify.ID) bool {
-	added := false
-
 	for i := 0; i < tracks.Total; i++ {
 		if tracks.Tracks[i].Track.ID == id {
-			added = true
+			return true
 		}
 	}
 
-	return added
-}
-
-func intLimiter(c int) int {
-	if c < 4 {
-		return c
-	} else {
-		return 4
-	}
+	return false
 }

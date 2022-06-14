@@ -16,7 +16,6 @@ var (
 	PLAYLIST_ID  spotify.ID = "3uzLhwcuH1KpmeCPWMqnQl"
 	USER_ID                 = "m05hi"
 
-	ctx            = context.Background()
 	spo            *spotify.Client
 	artistsDB      *sql.DB
 	playlistTracks *spotify.PlaylistTrackPage
@@ -45,10 +44,11 @@ func main() {
 	go func() {
 		for {
 			fmt.Println("[NU] Initiating Release Scanner")
+			ctx := context.Background()
 			artists := artistdb.GetAllArtists(artistsDB)
 
 			var err error
-			playlistTracks, err = spo.GetPlaylistTracks(context.Background(), PLAYLIST_ID)
+			playlistTracks, err = spo.GetPlaylistTracks(ctx, PLAYLIST_ID)
 			if err != nil {
 				printError(err)
 			}
@@ -57,7 +57,7 @@ func main() {
 				trackIDs := getNewestTracks(artist)
 
 				if len(trackIDs) > 0 {
-					snapshotID, err := spo.AddTracksToPlaylist(context.Background(), PLAYLIST_ID, trackIDs...)
+					snapshotID, err := spo.AddTracksToPlaylist(ctx, PLAYLIST_ID, trackIDs...)
 					if err != nil {
 						fmt.Printf("ERROR: %v", err)
 					} else {

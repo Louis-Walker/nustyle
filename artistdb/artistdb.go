@@ -23,9 +23,7 @@ func GetAllArtists(db *sql.DB) []m.Artist {
 	var artists []m.Artist
 
 	ar, err := db.Query("SELECT * FROM Artists")
-	if err != nil {
-		checkErr(err)
-	}
+	checkErr(err)
 	defer ar.Close()
 
 	for ar.Next() {
