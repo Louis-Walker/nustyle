@@ -12,6 +12,7 @@ import (
 )
 
 var (
+	DB_LOCATION             = "./artistdb/artistsDEV.db"
 	REDIRECT_URL            = "http://localhost:8080/auth"
 	PLAYLIST_ID  spotify.ID = "3uzLhwcuH1KpmeCPWMqnQl"
 	USER_ID                 = "m05hi"
@@ -22,28 +23,16 @@ var (
 )
 
 func main() {
-	if len(os.Args) > 1 {
-		if os.Args[1] == "-p" {
-			REDIRECT_URL = "http://localhost:8080/auth"
-			PLAYLIST_ID = "0TdRzSP9GMdDcnuZd7wSTE"
+	prodCheck() //Check environment
 
-			fmt.Println("[NU] Initialising in PRODUCTION mode. Do you wish to continue? [y/n]")
-			var input string
-			_, err := fmt.Scan(&input)
-			printError(err)
-
-			if input == "n" {
-				os.Exit(1)
-			}
-		}
-	}
-
+	// Connections
 	spo = initSpotifyClient()
-	artistsDB = artistdb.OpenConn("./artistdb/artists.db")
+	artistsDB = artistdb.OpenConn(DB_LOCATION)
 
+	// Main playlist crawler
 	go func() {
 		for {
-			fmt.Println("[NU] Initiating Release Scanner")
+			fmt.Println("[NU] Initiating Release Crawler")
 			ctx := context.Background()
 			artists := artistdb.GetAllArtists(artistsDB)
 
@@ -83,6 +72,25 @@ func main() {
 
 		if input == "terminate" {
 			break
+		}
+	}
+}
+
+func prodCheck() {
+	if len(os.Args) > 1 {
+		if os.Args[1] == "-p" {
+			DB_LOCATION = "./artistdb/artists.db"
+			REDIRECT_URL = "http://localhost:8080/auth"
+			PLAYLIST_ID = "0TdRzSP9GMdDcnuZd7wSTE"
+
+			fmt.Println("[NU] Initialising in PRODUCTION mode. Do you wish to continue? [y/n]")
+			var input string
+			_, err := fmt.Scan(&input)
+			printError(err)
+
+			if input == "n" {
+				os.Exit(1)
+			}
 		}
 	}
 }
