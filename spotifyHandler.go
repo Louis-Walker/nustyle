@@ -57,7 +57,7 @@ func getNewestTracks(a m.Artist) []spotify.ID {
 
 	var newTracks []spotify.ID
 
-	for _, album := range albums.Albums[:4] {
+	for _, album := range albums.Albums[:getCount(albums.Total)] {
 		if album.ReleaseDateTime().After(a.LastTrackDateTime) {
 			tracks, err := spo.GetAlbumTracks(ctx, album.ID)
 			printError(err)
@@ -119,4 +119,12 @@ func completeAuth(w http.ResponseWriter, r *http.Request) {
 	client := spotify.New(auth.Client(r.Context(), tok))
 	fmt.Fprintf(w, "Login Completed!")
 	ch <- client
+}
+
+func getCount(c int) int {
+	if c < 4 {
+		return c
+	} else {
+		return 4
+	}
 }

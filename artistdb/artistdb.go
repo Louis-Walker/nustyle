@@ -2,7 +2,6 @@ package artistdb
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"time"
 
@@ -41,7 +40,7 @@ func GetAllArtists(db *sql.DB) []m.Artist {
 			checkErr(err)
 		}
 
-		a.LastTrackDateTime, err = time.Parse("2006-01-02 15:04:05", lastTrackDateTime)
+		a.LastTrackDateTime, err = time.Parse("2006-01-02 15:04:05+00:00", lastTrackDateTime)
 		if err != nil {
 			checkErr(err)
 		}
@@ -58,13 +57,12 @@ func UpdateLastTrack(db *sql.DB, SUI string) {
 		checkErr(err)
 	}
 
-	currentTime := time.Now().Format("2006-01-02 15:04:05")
+	currentTime := time.Now().Format("2006-01-02 15:04:05+00:00")
 
-	res, err := stmt.Exec(currentTime, SUI)
+	_, err = stmt.Exec(currentTime, SUI)
 	if err != nil {
 		checkErr(err)
 	}
-	println(res)
 }
 
 func AddArtist(db *sql.DB, a m.Artist) {
@@ -73,11 +71,10 @@ func AddArtist(db *sql.DB, a m.Artist) {
 		if err != nil {
 			checkErr(err)
 		}
-		res, err := stmt.Exec(a.Name, a.SUI, a.LastTrackDateTime)
+		_, err = stmt.Exec(a.Name, a.SUI, a.LastTrackDateTime)
 		if err != nil {
 			checkErr(err)
 		}
-		fmt.Println(res)
 	}
 }
 

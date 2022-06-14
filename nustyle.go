@@ -36,6 +36,8 @@ func main() {
 						fmt.Printf("Updated: %v, SID: %v", artist.Name, snapshotID)
 					}
 				}
+				fmt.Println(artist.Name)
+				time.Sleep(time.Second / 3)
 			}
 
 			time.Sleep(time.Minute * 60)

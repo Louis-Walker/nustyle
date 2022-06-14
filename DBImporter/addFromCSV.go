@@ -26,8 +26,8 @@ func main() {
 		fmt.Println(err)
 	}
 
-	for {
-		a, err := r.Read()
+	a, err := r.ReadAll()
+	for i := range a {
 		if err == io.EOF {
 			break
 		}
@@ -38,8 +38,8 @@ func main() {
 		dateTime, _ := time.Parse("2006-01-02 15:04:05", time.Now().Format("2006-01-02 15:04:05"))
 
 		newArtist := m.Artist{
-			Name:              a[0],
-			SUI:               a[1],
+			Name:              a[i][0],
+			SUI:               a[i][1],
 			LastTrackDateTime: dateTime,
 		}
 
