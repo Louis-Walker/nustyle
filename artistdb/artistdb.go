@@ -2,17 +2,17 @@ package artistdb
 
 import (
 	"database/sql"
-	"log"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 
+	logger "example.com/nustyle/logger"
 	m "example.com/nustyle/model"
 )
 
 func OpenConn(path string) *sql.DB {
 	db, err := sql.Open("sqlite3", path)
-	checkErr(err)
+	logger.Psave("OpenConn", err)
 
 	db.SetMaxOpenConns(1)
 
@@ -23,7 +23,7 @@ func GetAllArtists(db *sql.DB) []m.Artist {
 	var artists []m.Artist
 
 	ar, err := db.Query("SELECT * FROM Artists")
-	checkErr(err)
+	logger.Psave("GetAllArtists", err)
 	defer ar.Close()
 
 	for ar.Next() {
@@ -35,12 +35,12 @@ func GetAllArtists(db *sql.DB) []m.Artist {
 
 		err := ar.Scan(&id, &a.Name, &a.SUI, &lastTrackDateTime)
 		if err != nil {
-			checkErr(err)
+			logger.Psave("GetAllArtists", err)
 		}
 
 		a.LastTrackDateTime, err = time.Parse("2006-01-02 15:04:05+00:00", lastTrackDateTime)
 		if err != nil {
-			checkErr(err)
+			logger.Psave("GetAllArtists", err)
 		}
 
 		artists = append(artists, a)
@@ -52,14 +52,14 @@ func GetAllArtists(db *sql.DB) []m.Artist {
 func UpdateLastTrack(db *sql.DB, SUI string) {
 	stmt, err := db.Prepare("UPDATE Artists SET LastTrackDateTime = ? WHERE SUI = ?")
 	if err != nil {
-		checkErr(err)
+		logger.Psave("UpdateLastTrack", err)
 	}
 
 	currentTime := time.Now().Format("2006-01-02 15:04:05+00:00")
 
 	_, err = stmt.Exec(currentTime, SUI)
 	if err != nil {
-		checkErr(err)
+		logger.Psave("UpdateLastTrack", err)
 	}
 }
 
@@ -67,11 +67,11 @@ func AddArtist(db *sql.DB, a m.Artist) {
 	if !artistExists(db, a.SUI) {
 		stmt, err := db.Prepare("INSERT INTO Artists(Name, SUI, LastTrackDateTime) VALUES (?, ?, ?)")
 		if err != nil {
-			checkErr(err)
+			logger.Psave("AddArtist", err)
 		}
 		_, err = stmt.Exec(a.Name, a.SUI, a.LastTrackDateTime)
 		if err != nil {
-			checkErr(err)
+			logger.Psave("AddArtist", err)
 		}
 	}
 }
@@ -79,14 +79,14 @@ func AddArtist(db *sql.DB, a m.Artist) {
 func artistExists(db *sql.DB, SUI string) bool {
 	stmt, err := db.Prepare("SELECT count(*) FROM Artists WHERE SUI = ?")
 	if err != nil {
-		checkErr(err)
+		logger.Psave("artistExists", err)
 	}
 
 	var count int
 
 	err = stmt.QueryRow(SUI).Scan(&count)
 	if err != nil {
-		log.Fatal(err)
+		logger.Psave("artistExists", err)
 	}
 
 	if count == 0 {
@@ -94,10 +94,4 @@ func artistExists(db *sql.DB, SUI string) bool {
 	}
 
 	return true
-}
-
-func checkErr(err error) {
-	if err != nil {
-		panic(err)
-	}
 }
