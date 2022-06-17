@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/zmb3/spotify/v2"
@@ -38,7 +39,7 @@ func New(redirectURL string) (*SpotifyService, error) {
 
 	go func() {
 		err := http.ListenAndServe(":8080", nil)
-		logger.Psave("initSpotifyClient", err)
+		logger.Psave("spotifyService/New", err)
 	}()
 
 	url := s.auth.AuthURL(s.state)
@@ -86,7 +87,7 @@ func (s *SpotifyService) GetNewestTracks(a m.Artist, t *spotify.PlaylistTrackPag
 			logger.Psave("getNewestTracks", err)
 
 			for _, track := range tracks.Tracks {
-				if !trackAdded(t, track.ID) {
+				if !trackAdded(t, track.ID) && !isExtended(track.Name) {
 					newTracks = append(newTracks, track.ID)
 				}
 			}
@@ -136,6 +137,14 @@ func trackAdded(tracks *spotify.PlaylistTrackPage, id spotify.ID) bool {
 		if tracks.Tracks[i].Track.ID == id {
 			return true
 		}
+	}
+
+	return false
+}
+
+func isExtended(t string) bool {
+	if strings.Contains(t, "Extended") || strings.Contains(t, "extended") {
+		return true
 	}
 
 	return false

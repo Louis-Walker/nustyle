@@ -47,30 +47,31 @@ func main() {
 		for {
 			fmt.Println("[NU] Initiating Release Crawler")
 			ctx := context.Background()
+			defer ctx.Done()
 			artists := artistdb.GetAllArtists(nu.artistsDB)
+			artistsUpdated := 0
 
 			var err error
 			nu.playlistTracks, err = spo.GetPlaylistTracks(ctx, nu.PLAYLIST_ID)
-			logger.Psave("Main playlist crawler (Unnamed)", err)
+			logger.Psave("main/Main playlist crawler", err)
 
 			for _, artist := range artists {
 				trackIDs := nu.spotifyService.GetNewestTracks(artist, nu.playlistTracks)
 
 				if len(trackIDs) > 0 {
-					snapshotID, err := spo.AddTracksToPlaylist(ctx, nu.PLAYLIST_ID, trackIDs...)
-					if err != nil {
-						fmt.Printf("ERROR: %v", err)
-					} else {
-						artistdb.UpdateLastTrack(nu.artistsDB, artist.SUI)
-						fmt.Printf("Updated: %v, SID: %v", artist.Name, snapshotID)
-					}
+					_, err := spo.AddTracksToPlaylist(ctx, nu.PLAYLIST_ID, trackIDs...)
+					logger.Psave("main/Main playlist crawler", err)
+
+					artistdb.UpdateLastTrack(nu.artistsDB, artist.SUI)
+					fmt.Printf("Updated: %v, Tracks: %v", artist.Name, len(trackIDs))
+					artistsUpdated += 1
 				}
 
 				fmt.Println(artist.Name)
 				// time.Sleep(time.Second / 3)
 			}
 
-			fmt.Printf("[NU] Crawl Completed At %v - %v Artists Crawled\n", time.Now().Format("2006-01-02 3:4:5 pm"), len(artists))
+			fmt.Printf("[NU] Crawl Completed At %v - %v/%v Updated\n", time.Now().Format("06-01-02 15:04:05"), artistsUpdated, len(artists))
 			time.Sleep(time.Minute * 30)
 		}
 	}()
@@ -108,7 +109,8 @@ func prodCheck(nu Nustyle) {
 
 func weeklyUpdater(nu Nustyle) {
 	for {
-		if time.Now().Day() == 1 && nu.playlistTracks.Total > 20 {
+		// Only updates playlist if its past 5pm on monday
+		if time.Now().Day() == 1 && time.Now().Hour() > 17 && nu.playlistTracks.Total > 20 {
 			nu.spotifyService.UpdatePlaylist(nu.PLAYLIST_ID, nu.USER_ID)
 			fmt.Printf("[NU] New Playlist Created - Main Playlist Cleared\n")
 		}
