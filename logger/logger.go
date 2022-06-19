@@ -2,6 +2,7 @@ package logger
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"time"
 )
@@ -12,6 +13,15 @@ func Psave(funcName string, err error) {
 
 		fmt.Printf(errorMessage)
 
-		os.WriteFile("../log.txt", []byte(errorMessage), 0)
+		f, err := os.OpenFile("log.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			log.Println(err)
+		}
+
+		defer f.Close()
+
+		if _, err := f.WriteString(errorMessage); err != nil {
+			log.Println(err)
+		}
 	}
 }
