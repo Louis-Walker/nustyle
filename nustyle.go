@@ -15,29 +15,27 @@ import (
 )
 
 type Nustyle struct {
-	DB_LOCATION    string
-	PLAYLIST_ID    spotify.ID
-	REDIRECT_URL   string
-	USER_ID        string
-	spotifyService *ss.SpotifyService
-	artistsDB      *sql.DB
-	playlistTracks *spotify.PlaylistTrackPage
+	pathToDb, redirectUrl, userId string
+	playlistId                    spotify.ID
+	spotifyService                *ss.SpotifyService
+	artistsDB                     *sql.DB
+	playlistTracks                *spotify.PlaylistTrackPage
 }
 
 func main() {
 	var nu Nustyle = Nustyle{
-		DB_LOCATION:  "./artistdb/artistsDEV.db",
-		PLAYLIST_ID:  "3uzLhwcuH1KpmeCPWMqnQl",
-		REDIRECT_URL: "http://localhost:8080/auth",
-		USER_ID:      "m05hi",
+		pathToDb:    "./artistdb/artists.db",
+		playlistId:  "3uzLhwcuH1KpmeCPWMqnQl",
+		redirectUrl: "http://localhost:8080/auth",
+		userId:      "m05hi",
 	}
 
-	prodCheck(nu) //Check environment
+	prodCheck(&nu) //Check environment
 
 	// Connections
 	var err error
-	nu.artistsDB = artistdb.OpenConn(nu.DB_LOCATION)
-	nu.spotifyService, err = ss.New(nu.REDIRECT_URL)
+	nu.artistsDB = artistdb.OpenConn(nu.pathToDb)
+	nu.spotifyService, err = ss.New(nu.redirectUrl)
 	logger.Psave("main", err)
 
 	spo := nu.spotifyService.Client // Easier short hand
@@ -52,26 +50,26 @@ func main() {
 			artistsUpdated := 0
 
 			var err error
-			nu.playlistTracks, err = spo.GetPlaylistTracks(ctx, nu.PLAYLIST_ID)
+			nu.playlistTracks, err = spo.GetPlaylistTracks(ctx, nu.playlistId)
 			logger.Psave("main/Main playlist crawler", err)
 
 			for _, artist := range artists {
 				trackIDs := nu.spotifyService.GetNewestTracks(artist, nu.playlistTracks)
 
 				if len(trackIDs) > 0 {
-					_, err := spo.AddTracksToPlaylist(ctx, nu.PLAYLIST_ID, trackIDs...)
+					_, err := spo.AddTracksToPlaylist(ctx, nu.playlistId, trackIDs...)
 					logger.Psave("main/Main playlist crawler", err)
 
 					artistdb.UpdateLastTrack(nu.artistsDB, artist.SUI)
-					fmt.Printf("Updated: %v, Tracks: %v", artist.Name, len(trackIDs))
+					fmt.Printf("Updated: %v, Tracks: %v\n", artist.Name, len(trackIDs))
 					artistsUpdated += 1
+				} else {
+					fmt.Println(artist.Name)
 				}
-
-				fmt.Println(artist.Name)
 				// time.Sleep(time.Second / 3)
 			}
 
-			fmt.Printf("[NU] Crawl Completed At %v - %v/%v Updated\n", time.Now().Format("06-01-02 15:04:05"), artistsUpdated, len(artists))
+			fmt.Printf("[NU] Crawl Completed At %v - %v/%v Artists Updated\n", time.Now().Format("06-01-02 15:04:05"), artistsUpdated, len(artists))
 			time.Sleep(time.Minute * 30)
 		}
 	}()
@@ -88,12 +86,12 @@ func main() {
 	}
 }
 
-func prodCheck(nu Nustyle) {
+func prodCheck(nu *Nustyle) {
 	if len(os.Args) > 1 {
 		if os.Args[1] == "-p" {
-			nu.DB_LOCATION = "./artistdb/artists.db"
-			nu.REDIRECT_URL = "http://localhost:8080/auth"
-			nu.PLAYLIST_ID = "0TdRzSP9GMdDcnuZd7wSTE"
+			nu.pathToDb = "./artistdb/artists.db"
+			nu.redirectUrl = "http://localhost:8080/auth"
+			nu.playlistId = "0TdRzSP9GMdDcnuZd7wSTE"
 
 			fmt.Println("[NU] Initialising in PRODUCTION mode. Do you wish to continue? [y/n]")
 			var input string
@@ -111,7 +109,7 @@ func weeklyUpdater(nu Nustyle) {
 	for {
 		// Only updates playlist if its past 5pm on monday
 		if time.Now().Day() == 1 && time.Now().Hour() > 17 && nu.playlistTracks.Total > 20 {
-			nu.spotifyService.UpdatePlaylist(nu.PLAYLIST_ID, nu.USER_ID)
+			nu.spotifyService.UpdatePlaylist(nu.playlistId, nu.userId)
 			fmt.Printf("[NU] New Playlist Created - Main Playlist Cleared\n")
 		}
 

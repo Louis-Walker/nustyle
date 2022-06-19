@@ -22,7 +22,7 @@ type SpotifyService struct {
 	ch           chan *spotify.Client
 	state        string
 	REDIRECT_URL string
-	ctx          context.Context
+	Ctx          context.Context
 }
 
 func New(redirectURL string) (*SpotifyService, error) {
@@ -31,7 +31,7 @@ func New(redirectURL string) (*SpotifyService, error) {
 		ch:           make(chan *spotify.Client),
 		state:        "abc123",
 		REDIRECT_URL: redirectURL,
-		ctx:          context.Background(),
+		Ctx:          context.Background(),
 	}
 
 	http.HandleFunc("/auth", func(w http.ResponseWriter, r *http.Request) { completeAuth(w, r, *s) })
@@ -47,8 +47,8 @@ func New(redirectURL string) (*SpotifyService, error) {
 
 	client := <-s.ch
 
-	user, err := client.CurrentUser(s.ctx)
-	logger.Psave("initSpotifyClient", err)
+	user, err := client.CurrentUser(s.Ctx)
+	logger.Psave("spotifyService/New", err)
 	fmt.Println("You are logged in as:", user.ID)
 
 	s.Client = client
@@ -57,10 +57,10 @@ func New(redirectURL string) (*SpotifyService, error) {
 }
 
 func (s *SpotifyService) GetNewestTracks(a m.Artist, t *spotify.PlaylistTrackPage) []spotify.ID {
-	var newTracks []spotify.ID
+	var newTracks []spotify.ID = []spotify.ID{}
 
-	albums, err := s.Client.GetArtistAlbums(s.ctx, spotify.ID(a.SUI), []spotify.AlbumType{1, 2})
-	logger.Psave("getNewestTracks", err)
+	albums, err := s.Client.GetArtistAlbums(s.Ctx, spotify.ID(a.SUI), []spotify.AlbumType{1, 2})
+	logger.Psave("GetNewestTracks", err)
 
 	if albums.Albums == nil {
 		return newTracks
@@ -83,8 +83,8 @@ func (s *SpotifyService) GetNewestTracks(a m.Artist, t *spotify.PlaylistTrackPag
 		}
 
 		if isNew(album.ReleaseDateTime(), a.LastTrackDateTime) {
-			tracks, err := s.Client.GetAlbumTracks(s.ctx, album.ID)
-			logger.Psave("getNewestTracks", err)
+			tracks, err := s.Client.GetAlbumTracks(s.Ctx, album.ID)
+			logger.Psave("GetNewestTracks", err)
 
 			for _, track := range tracks.Tracks {
 				if !trackAdded(t, track.ID) && !isExtended(track.Name) {
@@ -100,36 +100,36 @@ func (s *SpotifyService) GetNewestTracks(a m.Artist, t *spotify.PlaylistTrackPag
 func (s *SpotifyService) UpdatePlaylist(pid spotify.ID, uid string) {
 	c := s.Client
 
-	playlist, err := c.GetPlaylist(s.ctx, pid)
-	logger.Psave("updatePlaylist", err)
+	playlist, err := c.GetPlaylist(s.Ctx, pid)
+	logger.Psave("UpdatePlaylist", err)
 	oldName := playlist.Name
 
 	// CHANGE NAME
 	_, nowMonth, nowDay := time.Now().Date()
 	newName := fmt.Sprintf("Nustyle %v/%v [DEV]", nowDay, int(nowMonth))
 
-	err = c.ChangePlaylistName(s.ctx, pid, newName)
-	logger.Psave("updatePlaylist", err)
+	err = c.ChangePlaylistName(s.Ctx, pid, newName)
+	logger.Psave("UpdatePlaylist", err)
 
 	// COPY TO NEW PLAYLIST
 	var fp *spotify.FullPlaylist
-	fp, err = c.CreatePlaylistForUser(s.ctx, uid, oldName, "", false, false)
-	logger.Psave("updatePlaylist", err)
+	fp, err = c.CreatePlaylistForUser(s.Ctx, uid, oldName, "", false, false)
+	logger.Psave("UpdatePlaylist", err)
 
 	var tracks *spotify.PlaylistItemPage
-	tracks, err = c.GetPlaylistItems(s.ctx, pid)
-	logger.Psave("updatePlaylist", err)
+	tracks, err = c.GetPlaylistItems(s.Ctx, pid)
+	logger.Psave("UpdatePlaylist", err)
 
 	var trackIDs []spotify.ID
 	for i := 0; i < tracks.Total; i++ {
 		tID := tracks.Items[i].Track.Track.ID
 		trackIDs = append(trackIDs, tID)
 	}
-	s.Client.AddTracksToPlaylist(s.ctx, fp.ID, trackIDs...)
+	s.Client.AddTracksToPlaylist(s.Ctx, fp.ID, trackIDs...)
 
 	//CLEAN MAIN PLAYLIST
-	_, err = s.Client.RemoveTracksFromPlaylist(s.ctx, pid, trackIDs...)
-	logger.Psave("updatePlaylist", err)
+	_, err = s.Client.RemoveTracksFromPlaylist(s.Ctx, pid, trackIDs...)
+	logger.Psave("UpdatePlaylist", err)
 }
 
 func trackAdded(tracks *spotify.PlaylistTrackPage, id spotify.ID) bool {
