@@ -17,21 +17,21 @@ import (
 )
 
 type SpotifyService struct {
-	auth         *spotifyauth.Authenticator
-	Client       *spotify.Client
-	ch           chan *spotify.Client
-	state        string
-	REDIRECT_URL string
-	Ctx          context.Context
+	auth        *spotifyauth.Authenticator
+	Client      *spotify.Client
+	ch          chan *spotify.Client
+	state       string
+	redirectUrl string
+	Ctx         context.Context
 }
 
 func New(redirectURL string) (*SpotifyService, error) {
 	var s = &SpotifyService{
-		auth:         newAuth(redirectURL),
-		ch:           make(chan *spotify.Client),
-		state:        "abc123",
-		REDIRECT_URL: redirectURL,
-		Ctx:          context.Background(),
+		auth:        newAuth(redirectURL),
+		ch:          make(chan *spotify.Client),
+		state:       "abc123",
+		redirectUrl: redirectURL,
+		Ctx:         context.Background(),
 	}
 
 	http.HandleFunc("/auth", func(w http.ResponseWriter, r *http.Request) { completeAuth(w, r, *s) })
@@ -66,16 +66,6 @@ func (s *SpotifyService) GetNewestTracks(a m.Artist, t *spotify.PlaylistTrackPag
 		return newTracks
 	}
 
-	isNew := func(tDate time.Time, lDate time.Time) bool {
-		lElapsed := lDate.Truncate(time.Hour * 24).Add(-(time.Minute * 1))
-
-		if tDate.After(lElapsed) {
-			return true
-		}
-
-		return false
-	}
-
 	for i, album := range albums.Albums {
 		// Limit amount of checks... don't need to check whole library
 		if i >= 4 {
@@ -106,7 +96,7 @@ func (s *SpotifyService) UpdatePlaylist(pid spotify.ID, uid string) {
 
 	// CHANGE NAME
 	_, nowMonth, nowDay := time.Now().Date()
-	newName := fmt.Sprintf("Nustyle %v/%v [DEV]", nowDay, int(nowMonth))
+	newName := fmt.Sprintf("Nustyle %v/%v", nowDay, int(nowMonth))
 
 	err = c.ChangePlaylistName(s.Ctx, pid, newName)
 	logger.Psave("UpdatePlaylist", err)
@@ -137,6 +127,16 @@ func trackAdded(tracks *spotify.PlaylistTrackPage, id spotify.ID) bool {
 		if tracks.Tracks[i].Track.ID == id {
 			return true
 		}
+	}
+
+	return false
+}
+
+func isNew(tDate time.Time, lDate time.Time) bool {
+	lElapsed := lDate.Truncate(time.Hour * 24).Add(-(time.Minute * 1))
+
+	if tDate.After(lElapsed) {
+		return true
 	}
 
 	return false

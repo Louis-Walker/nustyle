@@ -24,7 +24,7 @@ type Nustyle struct {
 
 func main() {
 	var nu Nustyle = Nustyle{
-		pathToDb:    "./artistdb/artists.db",
+		pathToDb:    "./artistdb/artistsDEV.db",
 		playlistId:  "3uzLhwcuH1KpmeCPWMqnQl",
 		redirectUrl: "http://localhost:8080/auth",
 		userId:      "m05hi",
@@ -38,13 +38,17 @@ func main() {
 	nu.spotifyService, err = ss.New(nu.redirectUrl)
 	logger.Psave("main", err)
 
+	ctx := context.Background()
 	spo := nu.spotifyService.Client // Easier short hand
+
+	nu.playlistTracks, err = spo.GetPlaylistTracks(ctx, nu.playlistId)
+	logger.Psave("main/Main playlist crawler", err)
 
 	// Main playlist crawler
 	go func() {
 		for {
 			fmt.Println("[NU] Initiating Release Crawler")
-			ctx := context.Background()
+			ctx = context.Background()
 			defer ctx.Done()
 			artists := artistdb.GetAllArtists(nu.artistsDB)
 			artistsUpdated := 0
@@ -70,11 +74,10 @@ func main() {
 			}
 
 			fmt.Printf("[NU] Crawl Completed At %v - %v/%v Artists Updated\n", time.Now().Format("06-01-02 15:04:05"), artistsUpdated, len(artists))
+			weeklyUpdater(nu)
 			time.Sleep(time.Minute * 30)
 		}
 	}()
-
-	go weeklyUpdater(nu)
 
 	for {
 		var input string
@@ -106,13 +109,9 @@ func prodCheck(nu *Nustyle) {
 }
 
 func weeklyUpdater(nu Nustyle) {
-	for {
-		// Only updates playlist if its past 5pm on monday
-		if time.Now().Day() == 1 && time.Now().Hour() > 17 && nu.playlistTracks.Total > 20 {
-			nu.spotifyService.UpdatePlaylist(nu.playlistId, nu.userId)
-			fmt.Printf("[NU] New Playlist Created - Main Playlist Cleared\n")
-		}
-
-		time.Sleep(time.Hour * 12)
+	// Only updates playlist if its past 5pm on monday
+	if int(time.Now().Weekday()) == 1 && time.Now().Hour() > 17 && len(nu.playlistTracks.Tracks) > 20 {
+		nu.spotifyService.UpdatePlaylist(nu.playlistId, nu.userId)
+		fmt.Printf("[NU] New Playlist Created - Main Playlist Cleared\n")
 	}
 }

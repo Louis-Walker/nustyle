@@ -1,0 +1,6 @@
+[22/06/19 18:40:21] main/Main playlist crawler: Get "https://api.spotify.com/v1/playlists/0TdRzSP9GMdDcnuZd7wSTE/tracks": context canceled
+[22/06/19 18:40:21] GetNewestTracks: Get "https://api.spotify.com/v1/artists/19rMhAfRlZVYTg4jiXOZCr/albums?include_groups=album%2Csingle": context canceled
+[22/06/19 21:44:42] main/Main playlist crawler: Get "https://api.spotify.com/v1/playlists/0TdRzSP9GMdDcnuZd7wSTE/tracks": context canceled
+[22/06/19 21:44:42] GetNewestTracks: Get "https://api.spotify.com/v1/artists/19rMhAfRlZVYTg4jiXOZCr/albums?include_groups=album%2Csingle": context canceled
+[22/06/20 10:13:41] main/Main playlist crawler: Get "https://api.spotify.com/v1/playlists/0TdRzSP9GMdDcnuZd7wSTE/tracks": context canceled
+[22/06/20 10:13:41] GetNewestTracks: Get "https://api.spotify.com/v1/artists/19rMhAfRlZVYTg4jiXOZCr/albums?include_groups=album%2Csingle": context canceled
