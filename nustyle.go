@@ -1,4 +1,4 @@
-package main
+package nustyle
 
 import (
 	"context"
@@ -8,16 +8,12 @@ import (
 	"time"
 
 	"github.com/zmb3/spotify/v2"
-
-	"example.com/nustyle/artistdb"
-	logger "example.com/nustyle/logger"
-	"example.com/nustyle/playlist"
 )
 
 type Nustyle struct {
-	pathToDb, redirectUrl, userId string
-	playlistId                    spotify.ID
-	playlistService               *playlist.Service
+	pathToDB, redirectURL, userID string
+	playlistID                    spotify.ID
+	playlistService               *Playlist
 	artistsDB                     *sql.DB
 	playlistTracks                *spotify.PlaylistTrackPage
 	Ctx                           context.Context
@@ -25,10 +21,10 @@ type Nustyle struct {
 
 func main() {
 	var nu Nustyle = Nustyle{
-		pathToDb:    "./artistdb/artistsDEV.db",
-		playlistId:  "3uzLhwcuH1KpmeCPWMqnQl",
-		redirectUrl: "http://localhost:8080/auth",
-		userId:      "m05hi",
+		pathToDB:    "./artistdb/artistsDEV.db",
+		playlistID:  "3uzLhwcuH1KpmeCPWMqnQl",
+		redirectURL: "http://localhost:8080/auth",
+		userID:      "m05hi",
 		Ctx:         context.Background(),
 	}
 
@@ -40,9 +36,9 @@ func main() {
 
 	// Connections
 	var err error
-	nu.artistsDB = artistdb.OpenConn(nu.pathToDb)
-	nu.playlistService, err = playlist.New(nu.Ctx, nu.redirectUrl)
-	logger.Psave("main", err)
+	nu.artistsDB = OpenArtistDB(nu.pathToDB)
+	nu.playlistService, err = NewPlaylist(nu.Ctx, nu.redirectURL)
+	cLog("main", err)
 
 	spo := nu.playlistService.Client // Easier short hand
 
@@ -50,21 +46,21 @@ func main() {
 	go func() {
 		for {
 			fmt.Println("[NU] Initiating Release Crawler")
-			artists := artistdb.GetAllArtists(nu.artistsDB)
+			artists := GetAllArtists(nu.artistsDB)
 			artistsUpdated := 0
 
 			var err error
-			nu.playlistTracks, err = spo.GetPlaylistTracks(nu.Ctx, nu.playlistId)
-			logger.Psave("main/Main playlist crawler", err)
+			nu.playlistTracks, err = spo.GetPlaylistTracks(nu.Ctx, nu.playlistID)
+			cLog("main/Main playlist crawler", err)
 
 			for _, artist := range artists {
 				trackIDs := nu.playlistService.GetNewestTracks(nu.Ctx, artist, nu.playlistTracks)
 
 				if len(trackIDs) > 0 {
-					_, err := spo.AddTracksToPlaylist(nu.Ctx, nu.playlistId, trackIDs...)
-					logger.Psave("main/Main playlist crawler", err)
+					_, err := spo.AddTracksToPlaylist(nu.Ctx, nu.playlistID, trackIDs...)
+					cLog("main/Main playlist crawler", err)
 
-					artistdb.UpdateLastTrack(nu.artistsDB, artist.SUI)
+					UpdateLastTrack(nu.artistsDB, artist.SUI)
 					fmt.Printf("Updated: %v, Tracks: %v\n", artist.Name, len(trackIDs))
 					artistsUpdated += 1
 				} else {
@@ -93,14 +89,14 @@ func main() {
 func prodCheck(nu *Nustyle) {
 	if len(os.Args) > 1 {
 		if os.Args[1] == "-p" {
-			nu.pathToDb = "./artistdb/artists.db"
-			nu.redirectUrl = "http://localhost:8080/auth"
-			nu.playlistId = "0TdRzSP9GMdDcnuZd7wSTE"
+			nu.pathToDB = "./artistdb/artists.db"
+			nu.redirectURL = "http://localhost:8080/auth"
+			nu.playlistID = "0TdRzSP9GMdDcnuZd7wSTE"
 
 			fmt.Println("[NU] Initialising in PRODUCTION mode. Do you wish to continue? [y/n]")
 			var input string
 			_, err := fmt.Scan(&input)
-			logger.Psave("prodCheck", err)
+			cLog("prodCheck", err)
 
 			if input == "n" {
 				os.Exit(1)
@@ -112,7 +108,7 @@ func prodCheck(nu *Nustyle) {
 func weeklyUpdater(nu Nustyle) {
 	// Only updates playlist if its past 5pm on monday
 	if int(time.Now().Weekday()) == 1 && time.Now().Hour() > 17 && len(nu.playlistTracks.Tracks) > 20 {
-		nu.playlistService.UpdatePlaylist(nu.Ctx, nu.playlistId, nu.userId)
+		nu.playlistService.UpdatePlaylist(nu.Ctx, nu.playlistID, nu.userID)
 		fmt.Printf("[NU] New Playlist Created - Main Playlist Cleared\n")
 	}
 }
