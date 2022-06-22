@@ -5,9 +5,10 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"os/exec"
+	"runtime"
 	"time"
 
-	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/zmb3/spotify/v2"
 )
 
@@ -36,14 +37,6 @@ func main() {
 	cLog("main", err)
 
 	spo := nu.playlist.Client // Easier short hand
-
-	app, err := newrelic.NewApplication(
-		newrelic.ConfigAppName("nustyle"),
-		newrelic.ConfigLicense("eu01xx1a029386e43e45ccac269ae30a573eNRAL"),
-		newrelic.ConfigDistributedTracerEnabled(true),
-	)
-
-	fmt.Println(app)
 
 	// Main playlist crawler
 	go func() {
@@ -89,7 +82,13 @@ func main() {
 }
 
 func prodCheck(nu *Nustyle) {
-	if len(os.Args) > 1 {
+	if len(os.Args) == 1 {
+		// Automatically open browser for auth if in local env
+		if runtime.GOOS == "windows" {
+			cmd := exec.Command("cmd", "/c", "start", "http://localhost:8080")
+			cmd.Start()
+		}
+	} else if len(os.Args) > 1 {
 		if os.Args[1] == "-p" {
 			nu.pathToDB = "./artistdb/artists.db"
 			nu.redirectURL = "http://quiet-reaches-27997.herokuapp.com/auth/callback"
