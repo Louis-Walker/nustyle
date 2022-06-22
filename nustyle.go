@@ -11,15 +11,16 @@ import (
 
 	"example.com/nustyle/artistdb"
 	logger "example.com/nustyle/logger"
-	ss "example.com/nustyle/spotifyService"
+	"example.com/nustyle/playlist"
 )
 
 type Nustyle struct {
 	pathToDb, redirectUrl, userId string
 	playlistId                    spotify.ID
-	spotifyService                *ss.SpotifyService
+	playlistService               *playlist.Service
 	artistsDB                     *sql.DB
 	playlistTracks                *spotify.PlaylistTrackPage
+	Ctx                           context.Context
 }
 
 func main() {
@@ -28,40 +29,39 @@ func main() {
 		playlistId:  "3uzLhwcuH1KpmeCPWMqnQl",
 		redirectUrl: "http://localhost:8080/auth",
 		userId:      "m05hi",
+		Ctx:         context.Background(),
 	}
+
+	// Context passed to spotify.Client must refresh for every re-authorization (1 hour)
+	var cancel context.CancelFunc
+	nu.Ctx, cancel = context.WithTimeout(nu.Ctx, time.Minute*60)
 
 	prodCheck(&nu) //Check environment
 
 	// Connections
 	var err error
 	nu.artistsDB = artistdb.OpenConn(nu.pathToDb)
-	nu.spotifyService, err = ss.New(nu.redirectUrl)
+	nu.playlistService, err = playlist.New(nu.Ctx, nu.redirectUrl)
 	logger.Psave("main", err)
 
-	ctx := context.Background()
-	spo := nu.spotifyService.Client // Easier short hand
-
-	nu.playlistTracks, err = spo.GetPlaylistTracks(ctx, nu.playlistId)
-	logger.Psave("main/Main playlist crawler", err)
+	spo := nu.playlistService.Client // Easier short hand
 
 	// Main playlist crawler
 	go func() {
 		for {
 			fmt.Println("[NU] Initiating Release Crawler")
-			ctx = context.Background()
-			defer ctx.Done()
 			artists := artistdb.GetAllArtists(nu.artistsDB)
 			artistsUpdated := 0
 
 			var err error
-			nu.playlistTracks, err = spo.GetPlaylistTracks(ctx, nu.playlistId)
+			nu.playlistTracks, err = spo.GetPlaylistTracks(nu.Ctx, nu.playlistId)
 			logger.Psave("main/Main playlist crawler", err)
 
 			for _, artist := range artists {
-				trackIDs := nu.spotifyService.GetNewestTracks(artist, nu.playlistTracks)
+				trackIDs := nu.playlistService.GetNewestTracks(nu.Ctx, artist, nu.playlistTracks)
 
 				if len(trackIDs) > 0 {
-					_, err := spo.AddTracksToPlaylist(ctx, nu.playlistId, trackIDs...)
+					_, err := spo.AddTracksToPlaylist(nu.Ctx, nu.playlistId, trackIDs...)
 					logger.Psave("main/Main playlist crawler", err)
 
 					artistdb.UpdateLastTrack(nu.artistsDB, artist.SUI)
@@ -75,6 +75,7 @@ func main() {
 
 			fmt.Printf("[NU] Crawl Completed At %v - %v/%v Artists Updated\n", time.Now().Format("06-01-02 15:04:05"), artistsUpdated, len(artists))
 			weeklyUpdater(nu)
+			defer cancel()
 			time.Sleep(time.Minute * 30)
 		}
 	}()
@@ -111,7 +112,7 @@ func prodCheck(nu *Nustyle) {
 func weeklyUpdater(nu Nustyle) {
 	// Only updates playlist if its past 5pm on monday
 	if int(time.Now().Weekday()) == 1 && time.Now().Hour() > 17 && len(nu.playlistTracks.Tracks) > 20 {
-		nu.spotifyService.UpdatePlaylist(nu.playlistId, nu.userId)
+		nu.playlistService.UpdatePlaylist(nu.Ctx, nu.playlistId, nu.userId)
 		fmt.Printf("[NU] New Playlist Created - Main Playlist Cleared\n")
 	}
 }

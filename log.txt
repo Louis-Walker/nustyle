@@ -10,3 +10,10 @@
 [22/06/20 23:55:42] GetNewestTracks: Get "https://api.spotify.com/v1/artists/19rMhAfRlZVYTg4jiXOZCr/albums?include_groups=album%2Csingle": context canceled
 [22/06/21 17:57:36] main/Main playlist crawler: Get "https://api.spotify.com/v1/playlists/0TdRzSP9GMdDcnuZd7wSTE/tracks": context canceled
 [22/06/21 17:57:36] GetNewestTracks: Get "https://api.spotify.com/v1/artists/19rMhAfRlZVYTg4jiXOZCr/albums?include_groups=album%2Csingle": context canceled
+[22/06/22 03:07:31] main/Main playlist crawler: Get "https://api.spotify.com/v1/playlists/0TdRzSP9GMdDcnuZd7wSTE/tracks": context canceled
+[22/06/22 03:07:31] GetNewestTracks: Get "https://api.spotify.com/v1/artists/19rMhAfRlZVYTg4jiXOZCr/albums?include_groups=album%2Csingle": context canceled
+[22/06/22 12:51:42] main/Main playlist crawler: Get "https://api.spotify.com/v1/playlists/0TdRzSP9GMdDcnuZd7wSTE/tracks": context canceled
+[22/06/22 12:51:42] GetNewestTracks: Get "https://api.spotify.com/v1/artists/19rMhAfRlZVYTg4jiXOZCr/albums?include_groups=album%2Csingle": context canceled
+[22/06/22 13:37:59] spotifyService/New: net/http: nil Context
+[22/06/22 14:40:31] main/Main playlist crawler: Get "https://api.spotify.com/v1/playlists/3uzLhwcuH1KpmeCPWMqnQl/tracks": context canceled
+[22/06/22 14:40:31] GetNewestTracks: Get "https://api.spotify.com/v1/artists/19rMhAfRlZVYTg4jiXOZCr/albums?include_groups=album%2Csingle": context canceled
