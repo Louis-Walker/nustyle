@@ -62,7 +62,7 @@ func (s *SpotifyService) GetNewestTracks(a m.Artist, t *spotify.PlaylistTrackPag
 	albums, err := s.Client.GetArtistAlbums(s.Ctx, spotify.ID(a.SUI), []spotify.AlbumType{1, 2})
 	logger.Psave("GetNewestTracks", err)
 
-	if albums.Albums == nil {
+	if &albums.Albums == nil {
 		return newTracks
 	}
 
@@ -77,7 +77,7 @@ func (s *SpotifyService) GetNewestTracks(a m.Artist, t *spotify.PlaylistTrackPag
 			logger.Psave("GetNewestTracks", err)
 
 			for _, track := range tracks.Tracks {
-				if !trackAdded(t, track.ID) && !isExtended(track.Name) {
+				if !isAdded(t, track.ID, track.Name) && !isExtended(track.Name) {
 					newTracks = append(newTracks, track.ID)
 				}
 			}
@@ -122,9 +122,10 @@ func (s *SpotifyService) UpdatePlaylist(pid spotify.ID, uid string) {
 	logger.Psave("UpdatePlaylist", err)
 }
 
-func trackAdded(tracks *spotify.PlaylistTrackPage, id spotify.ID) bool {
+func isAdded(tracks *spotify.PlaylistTrackPage, id spotify.ID, name string) bool {
 	for i := 0; i < tracks.Total; i++ {
-		if tracks.Tracks[i].Track.ID == id {
+		t := tracks.Tracks[i].Track
+		if t.ID == id || t.Name == name {
 			return true
 		}
 	}

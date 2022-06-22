@@ -51,43 +51,32 @@ func GetAllArtists(db *sql.DB) []m.Artist {
 
 func UpdateLastTrack(db *sql.DB, SUI string) {
 	stmt, err := db.Prepare("UPDATE Artists SET LastTrackDateTime = ? WHERE SUI = ?")
-	if err != nil {
-		logger.Psave("UpdateLastTrack", err)
-	}
+	logger.Psave("UpdateLastTrack", err)
 
 	currentTime := time.Now().Format("2006-01-02 15:04:05+00:00")
 
 	_, err = stmt.Exec(currentTime, SUI)
-	if err != nil {
-		logger.Psave("UpdateLastTrack", err)
-	}
+	logger.Psave("UpdateLastTrack", err)
 }
 
 func AddArtist(db *sql.DB, a m.Artist) {
 	if !artistExists(db, a.SUI) {
 		stmt, err := db.Prepare("INSERT INTO Artists(Name, SUI, LastTrackDateTime) VALUES (?, ?, ?)")
-		if err != nil {
-			logger.Psave("AddArtist", err)
-		}
+		logger.Psave("AddArtist", err)
+
 		_, err = stmt.Exec(a.Name, a.SUI, a.LastTrackDateTime)
-		if err != nil {
-			logger.Psave("AddArtist", err)
-		}
+		logger.Psave("AddArtist", err)
 	}
 }
 
 func artistExists(db *sql.DB, SUI string) bool {
 	stmt, err := db.Prepare("SELECT count(*) FROM Artists WHERE SUI = ?")
-	if err != nil {
-		logger.Psave("artistExists", err)
-	}
+	logger.Psave("artistExists", err)
 
 	var count int
 
 	err = stmt.QueryRow(SUI).Scan(&count)
-	if err != nil {
-		logger.Psave("artistExists", err)
-	}
+	logger.Psave("artistExists", err)
 
 	if count == 0 {
 		return false
