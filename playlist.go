@@ -19,6 +19,7 @@ type Playlist struct {
 	ch          chan *spotify.Client
 	state       string
 	redirectURL string
+	url         string
 }
 
 func NewPlaylist(ctx context.Context, redirectURL string) (*Playlist, error) {
@@ -29,8 +30,7 @@ func NewPlaylist(ctx context.Context, redirectURL string) (*Playlist, error) {
 		redirectURL: redirectURL,
 	}
 
-	http.HandleFunc("/", handleRoot)
-	http.HandleFunc("/auth", handleAuth)
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { handleAuth(w, r, *s) })
 	http.HandleFunc("/auth/callback", func(w http.ResponseWriter, r *http.Request) { completeAuth(w, r, *s) })
 
 	go func() {
@@ -38,8 +38,8 @@ func NewPlaylist(ctx context.Context, redirectURL string) (*Playlist, error) {
 		cLog("spotifyService/New", err)
 	}()
 
-	url := s.auth.AuthURL(s.state)
-	fmt.Println("Login URL:\n", url)
+	s.url = s.auth.AuthURL(s.state)
+	fmt.Println("Login URL:\n", s.url)
 
 	client := <-s.ch
 
@@ -144,14 +144,8 @@ func isExtended(t string) bool {
 	return false
 }
 
-func handleRoot(w http.ResponseWriter, r *http.Request) {
-	l := "/auth"
-	fmt.Fprint(w, fmt.Sprintf("<html><body><a href='%v'>Sign in with Spotify</a></body></html>", l))
-}
-
-func handleAuth(w http.ResponseWriter, r *http.Request) {
-	url := "https://accounts.spotify.com/authorize?client_id=+b1c55051e57c47c28659d3e0d12fc875&redirect_uri=http%3A%2F%2Fquiet-reaches-27997.herokuapp.com%2Fauth&response_type=code&scope=user-read-private+playlist-modify-public+playlist-modify-private&state=abc123"
-	http.Redirect(w, r, url, http.StatusFound)
+func handleAuth(w http.ResponseWriter, r *http.Request, s Playlist) {
+	http.Redirect(w, r, s.url, http.StatusFound)
 }
 
 func newAuth(redirectURL string) *spotifyauth.Authenticator {
