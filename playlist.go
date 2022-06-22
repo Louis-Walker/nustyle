@@ -29,17 +29,12 @@ func NewPlaylist(ctx context.Context, redirectURL string) (*Playlist, error) {
 		redirectURL: redirectURL,
 	}
 
-	port := os.Getenv("PORT")
-
-	if port == "" {
-		log.Fatal("$PORT must be set")
-	}
-
+	http.HandleFunc("/", handleRoot)
+	http.HandleFunc("/auth", handleAuth)
 	http.HandleFunc("/auth/callback", func(w http.ResponseWriter, r *http.Request) { completeAuth(w, r, *s) })
-	http.HandleFunc("/", rootHandler)
 
 	go func() {
-		err := http.ListenAndServe(fmt.Sprintf(":%v", port), nil)
+		err := http.ListenAndServe(":"+os.Getenv("PORT"), nil)
 		cLog("spotifyService/New", err)
 	}()
 
@@ -149,9 +144,14 @@ func isExtended(t string) bool {
 	return false
 }
 
-func rootHandler(w http.ResponseWriter, r *http.Request) {
-	l := "https://accounts.spotify.com/authorize?client_id=+b1c55051e57c47c28659d3e0d12fc875&redirect_uri=http%3A%2F%2Fquiet-reaches-27997.herokuapp.com%2Fauth&response_type=code&scope=user-read-private+playlist-modify-public+playlist-modify-private&state=abc123"
+func handleRoot(w http.ResponseWriter, r *http.Request) {
+	l := "/auth"
 	fmt.Fprint(w, fmt.Sprintf("<html><body><a href='%v'>Sign in with Spotify</a></body></html>", l))
+}
+
+func handleAuth(w http.ResponseWriter, r *http.Request) {
+	url := "https://accounts.spotify.com/authorize?client_id=+b1c55051e57c47c28659d3e0d12fc875&redirect_uri=http%3A%2F%2Fquiet-reaches-27997.herokuapp.com%2Fauth&response_type=code&scope=user-read-private+playlist-modify-public+playlist-modify-private&state=abc123"
+	http.Redirect(w, r, url, http.StatusFound)
 }
 
 func newAuth(redirectURL string) *spotifyauth.Authenticator {
