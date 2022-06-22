@@ -85,15 +85,6 @@ func prodCheck(nu *Nustyle) {
 			nu.pathToDB = "./artistdb/artists.db"
 			nu.redirectURL = "http://quiet-reaches-27997.herokuapp.com/auth/heroku/callback"
 			nu.playlistID = "0TdRzSP9GMdDcnuZd7wSTE"
-
-			fmt.Println("[NU] Initialising in PRODUCTION mode. Do you wish to continue? [y/n]")
-			var input string
-			_, err := fmt.Scan(&input)
-			cLog("prodCheck", err)
-
-			if input == "n" {
-				os.Exit(1)
-			}
 		}
 	}
 }
