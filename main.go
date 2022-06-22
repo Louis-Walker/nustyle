@@ -83,7 +83,7 @@ func prodCheck(nu *Nustyle) {
 	if len(os.Args) > 1 {
 		if os.Args[1] == "-p" {
 			nu.pathToDB = "./artistdb/artists.db"
-			nu.redirectURL = "http://localhost:8080/auth"
+			nu.redirectURL = "http://quiet-reaches-27997.herokuapp.com/auth/heroku/callback"
 			nu.playlistID = "0TdRzSP9GMdDcnuZd7wSTE"
 
 			fmt.Println("[NU] Initialising in PRODUCTION mode. Do you wish to continue? [y/n]")
