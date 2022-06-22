@@ -36,7 +36,7 @@ func NewPlaylist(ctx context.Context, redirectURL string) (*Playlist, error) {
 	}
 
 	http.HandleFunc("/auth", func(w http.ResponseWriter, r *http.Request) { completeAuth(w, r, *s) })
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
+	http.HandleFunc("/", rootHandler)
 
 	go func() {
 		err := http.ListenAndServe(fmt.Sprintf(":%v", port), nil)
@@ -147,6 +147,10 @@ func isExtended(t string) bool {
 	}
 
 	return false
+}
+
+func rootHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, `<html><body><a href="/auth">Sign in with Heroku</a></body></html>`)
 }
 
 func newAuth(redirectURL string) *spotifyauth.Authenticator {
