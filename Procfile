@@ -1,1 +1,1 @@
-web: bin/nustyle
+web: bin/nustyle -p

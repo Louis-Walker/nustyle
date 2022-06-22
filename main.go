@@ -80,21 +80,21 @@ func main() {
 }
 
 func prodCheck(nu *Nustyle) {
-	if len(os.Args) == 0 {
-		//if os.Args[1] == "-p" {
-		nu.pathToDB = "./artistdb/artists.db"
-		nu.redirectURL = "http://quiet-reaches-27997.herokuapp.com/auth/heroku/callback"
-		nu.playlistID = "0TdRzSP9GMdDcnuZd7wSTE"
+	if len(os.Args) > 1 {
+		if os.Args[1] == "-p" {
+			nu.pathToDB = "./artistdb/artists.db"
+			nu.redirectURL = "http://quiet-reaches-27997.herokuapp.com/auth/heroku/callback"
+			nu.playlistID = "0TdRzSP9GMdDcnuZd7wSTE"
 
-		fmt.Println("[NU] Initialising in PRODUCTION mode. Do you wish to continue? [y/n]")
-		var input string
-		_, err := fmt.Scan(&input)
-		cLog("prodCheck", err)
+			fmt.Println("[NU] Initialising in PRODUCTION mode. Do you wish to continue? [y/n]")
+			var input string
+			_, err := fmt.Scan(&input)
+			cLog("prodCheck", err)
 
-		if input == "n" {
-			os.Exit(1)
+			if input == "n" {
+				os.Exit(1)
+			}
 		}
-		//}
 	}
 }
 
