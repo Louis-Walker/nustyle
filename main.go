@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/zmb3/spotify/v2"
 )
 
@@ -35,6 +36,14 @@ func main() {
 	cLog("main", err)
 
 	spo := nu.playlist.Client // Easier short hand
+
+	app, err := newrelic.NewApplication(
+		newrelic.ConfigAppName("nustyle"),
+		newrelic.ConfigLicense("eu01xx1a029386e43e45ccac269ae30a573eNRAL"),
+		newrelic.ConfigDistributedTracerEnabled(true),
+	)
+
+	fmt.Println(app)
 
 	// Main playlist crawler
 	go func() {
