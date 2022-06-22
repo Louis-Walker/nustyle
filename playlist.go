@@ -29,11 +29,17 @@ func NewPlaylist(ctx context.Context, redirectURL string) (*Playlist, error) {
 		redirectURL: redirectURL,
 	}
 
+	port := os.Getenv("PORT")
+
+	if port == "" {
+		log.Fatal("$PORT must be set")
+	}
+
 	http.HandleFunc("/auth", func(w http.ResponseWriter, r *http.Request) { completeAuth(w, r, *s) })
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
 
 	go func() {
-		err := http.ListenAndServe(":8080", nil)
+		err := http.ListenAndServe(fmt.Sprintf(":%v", port), nil)
 		cLog("spotifyService/New", err)
 	}()
 
