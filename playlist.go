@@ -37,9 +37,9 @@ func NewPlaylist(ctx context.Context, redirectURL string) (*Playlist, error) {
 	go func() {
 		port := os.Getenv("PORT")
 
-		// if port == "" {
-		// 	port = "8080" // throw error instead once local dev fixed
-		// }
+		if port == "" {
+			log.Fatalf("No PORT specified!")
+		}
 
 		fmt.Println("Listening on port: " + port)
 		err := http.ListenAndServe(fmt.Sprintf(":%v", port), nil)
