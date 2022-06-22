@@ -83,7 +83,7 @@ func prodCheck(nu *Nustyle) {
 	if len(os.Args) > 1 {
 		if os.Args[1] == "-p" {
 			nu.pathToDB = "./artistdb/artists.db"
-			nu.redirectURL = "http://quiet-reaches-27997.herokuapp.com/auth/heroku/callback"
+			nu.redirectURL = "http://quiet-reaches-27997.herokuapp.com/auth"
 			nu.playlistID = "0TdRzSP9GMdDcnuZd7wSTE"
 		}
 	}
