@@ -1,4 +1,4 @@
-package nustyle
+package main
 
 import (
 	"context"
