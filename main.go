@@ -22,7 +22,7 @@ func main() {
 	var nu Nustyle = Nustyle{
 		pathToDB:    "./artistdb/artistsDEV.db",
 		playlistID:  "3uzLhwcuH1KpmeCPWMqnQl",
-		redirectURL: "http://localhost:8080/auth",
+		redirectURL: "http://localhost:8080/auth/callback",
 		userID:      "m05hi",
 	}
 

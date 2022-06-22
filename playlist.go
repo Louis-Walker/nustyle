@@ -30,16 +30,23 @@ func NewPlaylist(ctx context.Context, redirectURL string) (*Playlist, error) {
 		redirectURL: redirectURL,
 	}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { handleAuth(w, r, *s) })
+	http.HandleFunc("/", handleRoot)
+	http.HandleFunc("/auth", func(w http.ResponseWriter, r *http.Request) { handleAuth(w, r, *s) })
 	http.HandleFunc("/auth/callback", func(w http.ResponseWriter, r *http.Request) { completeAuth(w, r, *s) })
 
 	go func() {
-		err := http.ListenAndServe(":"+os.Getenv("PORT"), nil)
+		port := os.Getenv("PORT")
+
+		if port == "" {
+			port = "8080"
+		}
+
+		fmt.Println("Listening on port: " + port)
+		err := http.ListenAndServe(fmt.Sprintf(":%v", port), nil)
 		cLog("spotifyService/New", err)
 	}()
 
 	s.url = s.auth.AuthURL(s.state)
-	fmt.Println("Login URL:\n", s.url)
 
 	client := <-s.ch
 
@@ -142,6 +149,10 @@ func isExtended(t string) bool {
 	}
 
 	return false
+}
+
+func handleRoot(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "<p>Sign into <a href='auth'>Spotify</a></p>")
 }
 
 func handleAuth(w http.ResponseWriter, r *http.Request, s Playlist) {
