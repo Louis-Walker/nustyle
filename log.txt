@@ -1993,3 +1993,4 @@
 [22/06/22 19:23:52] GetNewestTracks: Get "https://api.spotify.com/v1/artists/6uGp0FWe0jCSoKoQ5Vu8pQ/albums?include_groups=album%2Csingle": context canceled
 [22/06/22 19:23:52] GetNewestTracks: Get "https://api.spotify.com/v1/artists/1OKLZ6g7k4btXpP37eCnVO/albums?include_groups=album%2Csingle": context canceled
 [22/06/22 19:23:52] GetNewestTracks: Get "https://api.spotify.com/v1/artists/5KENAwkg6GClWnY28tokF8/albums?include_groups=album%2Csingle": context canceled
+[22/06/23 16:48:50] main/Main playlist crawler: stream error: stream ID 203; PROTOCOL_ERROR; received from peer

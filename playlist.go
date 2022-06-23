@@ -71,8 +71,12 @@ func (s *Playlist) GetNewestTracks(ctx context.Context, a Artist, t *spotify.Pla
 		return newTracks
 	} else {
 		for i, album := range albums.Albums {
+			if i >= 10 {
+				break
+			}
+
 			// Limit amount of checks... don't need to check whole library
-			if isNew(album.ReleaseDateTime(), a.LastTrackDateTime) && !(i >= 4) {
+			if isNew(album.ReleaseDateTime(), a.LastTrackDateTime) {
 				tracks, err := s.Client.GetAlbumTracks(ctx, album.ID)
 				if err != nil {
 					cLog("GetNewestTracks", err)
@@ -83,8 +87,6 @@ func (s *Playlist) GetNewestTracks(ctx context.Context, a Artist, t *spotify.Pla
 						newTracks = append(newTracks, track.ID)
 					}
 				}
-			} else {
-				break
 			}
 		}
 
