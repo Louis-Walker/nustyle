@@ -34,7 +34,9 @@ func main() {
 	var err error
 	nu.artistsDB = OpenArtistDB(nu.pathToDB)
 	nu.playlist, err = NewPlaylist(context.Background(), nu.redirectURL)
-	cLog("main", err)
+	if err != nil {
+		cLog("main", err)
+	}
 
 	spo := nu.playlist.Client // Easier short hand
 
@@ -47,14 +49,18 @@ func main() {
 
 			var err error
 			nu.playlistTracks, err = spo.GetPlaylistTracks(context.Background(), nu.playlistID)
-			cLog("main/Main playlist crawler", err)
+			if err != nil {
+				cLog("main/Main playlist crawler", err)
+			}
 
 			for _, artist := range artists {
 				trackIDs := nu.playlist.GetNewestTracks(context.Background(), artist, nu.playlistTracks)
 
 				if len(trackIDs) > 0 {
 					_, err := spo.AddTracksToPlaylist(context.Background(), nu.playlistID, trackIDs...)
-					cLog("main/Main playlist crawler", err)
+					if err != nil {
+						cLog("main/Main playlist crawler", err)
+					}
 
 					UpdateLastTrack(nu.artistsDB, artist.SUI)
 					fmt.Printf("Updated: %v, Tracks: %v\n", artist.Name, len(trackIDs))

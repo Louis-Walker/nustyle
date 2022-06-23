@@ -43,7 +43,9 @@ func NewPlaylist(ctx context.Context, redirectURL string) (*Playlist, error) {
 
 		fmt.Println("Listening on port: " + port)
 		err := http.ListenAndServe(fmt.Sprintf(":%v", port), nil)
-		cLog("spotifyService/New", err)
+		if err != nil {
+			cLog("spotifyService/New", err)
+		}
 	}()
 
 	s.url = s.auth.AuthURL(s.state)
@@ -51,11 +53,12 @@ func NewPlaylist(ctx context.Context, redirectURL string) (*Playlist, error) {
 	client := <-s.ch
 
 	user, err := client.CurrentUser(ctx)
-	cLog("spotifyService/New", err)
+	if err != nil {
+		cLog("spotifyService/New", err)
+	}
+
 	fmt.Println("You are logged in as:", user.ID)
-
 	s.Client = client
-
 	return s, err
 }
 
@@ -71,7 +74,9 @@ func (s *Playlist) GetNewestTracks(ctx context.Context, a Artist, t *spotify.Pla
 			// Limit amount of checks... don't need to check whole library
 			if isNew(album.ReleaseDateTime(), a.LastTrackDateTime) && !(i >= 4) {
 				tracks, err := s.Client.GetAlbumTracks(ctx, album.ID)
-				cLog("GetNewestTracks", err)
+				if err != nil {
+					cLog("GetNewestTracks", err)
+				}
 
 				for _, track := range tracks.Tracks {
 					if !isAdded(t, track.ID, track.Name) && !isExtended(track.Name) {
@@ -91,7 +96,9 @@ func (s *Playlist) UpdatePlaylist(ctx context.Context, pid spotify.ID, uid strin
 	c := s.Client
 
 	playlist, err := c.GetPlaylist(ctx, pid)
-	cLog("UpdatePlaylist", err)
+	if err != nil {
+		cLog("UpdatePlaylist", err)
+	}
 	oldName := playlist.Name
 
 	// CHANGE NAME
@@ -99,16 +106,22 @@ func (s *Playlist) UpdatePlaylist(ctx context.Context, pid spotify.ID, uid strin
 	newName := fmt.Sprintf("Nustyle %v/%v", nowDay, int(nowMonth))
 
 	err = c.ChangePlaylistName(ctx, pid, newName)
-	cLog("UpdatePlaylist", err)
+	if err != nil {
+		cLog("UpdatePlaylist", err)
+	}
 
 	// COPY TO NEW PLAYLIST
 	var fp *spotify.FullPlaylist
 	fp, err = c.CreatePlaylistForUser(ctx, uid, oldName, "", false, false)
-	cLog("UpdatePlaylist", err)
+	if err != nil {
+		cLog("UpdatePlaylist", err)
+	}
 
 	var tracks *spotify.PlaylistItemPage
 	tracks, err = c.GetPlaylistItems(ctx, pid)
-	cLog("UpdatePlaylist", err)
+	if err != nil {
+		cLog("UpdatePlaylist", err)
+	}
 
 	var trackIDs []spotify.ID
 	for i := 0; i < tracks.Total; i++ {
@@ -119,7 +132,9 @@ func (s *Playlist) UpdatePlaylist(ctx context.Context, pid spotify.ID, uid strin
 
 	//CLEAN MAIN PLAYLIST
 	_, err = s.Client.RemoveTracksFromPlaylist(ctx, pid, trackIDs...)
-	cLog("UpdatePlaylist", err)
+	if err != nil {
+		cLog("UpdatePlaylist", err)
+	}
 }
 
 func isAdded(tracks *spotify.PlaylistTrackPage, id spotify.ID, name string) bool {

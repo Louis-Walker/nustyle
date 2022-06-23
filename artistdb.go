@@ -9,7 +9,9 @@ import (
 
 func OpenArtistDB(path string) *sql.DB {
 	db, err := sql.Open("sqlite3", path)
-	cLog("OpenConn", err)
+	if err != nil {
+		cLog("OpenConn", err)
+	}
 
 	db.SetMaxOpenConns(1)
 
@@ -20,7 +22,9 @@ func GetAllArtists(db *sql.DB) []Artist {
 	var artists []Artist
 
 	ar, err := db.Query("SELECT * FROM Artists")
-	cLog("GetAllArtists", err)
+	if err != nil {
+		cLog("GetAllArtists", err)
+	}
 	defer ar.Close()
 
 	for ar.Next() {
@@ -48,32 +52,44 @@ func GetAllArtists(db *sql.DB) []Artist {
 
 func UpdateLastTrack(db *sql.DB, SUI string) {
 	stmt, err := db.Prepare("UPDATE Artists SET LastTrackDateTime = ? WHERE SUI = ?")
-	cLog("UpdateLastTrack", err)
+	if err != nil {
+		cLog("UpdateLastTrack", err)
+	}
 
 	currentTime := time.Now().Format("2006-01-02 15:04:05+00:00")
 
 	_, err = stmt.Exec(currentTime, SUI)
-	cLog("UpdateLastTrack", err)
+	if err != nil {
+		cLog("UpdateLastTrack", err)
+	}
 }
 
 func AddArtist(db *sql.DB, a Artist) {
 	if !artistExists(db, a.SUI) {
 		stmt, err := db.Prepare("INSERT INTO Artists(Name, SUI, LastTrackDateTime) VALUES (?, ?, ?)")
-		cLog("AddArtist", err)
+		if err != nil {
+			cLog("AddArtist", err)
+		}
 
 		_, err = stmt.Exec(a.Name, a.SUI, a.LastTrackDateTime)
-		cLog("AddArtist", err)
+		if err != nil {
+			cLog("AddArtist", err)
+		}
 	}
 }
 
 func artistExists(db *sql.DB, SUI string) bool {
 	stmt, err := db.Prepare("SELECT count(*) FROM Artists WHERE SUI = ?")
-	cLog("artistExists", err)
+	if err != nil {
+		cLog("artistExists", err)
+	}
 
 	var count int
 
 	err = stmt.QueryRow(SUI).Scan(&count)
-	cLog("artistExists", err)
+	if err != nil {
+		cLog("artistExists", err)
+	}
 
 	if count == 0 {
 		return false
