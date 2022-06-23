@@ -14,16 +14,19 @@ import (
 )
 
 type Playlist struct {
+	ID          spotify.ID
 	auth        *spotifyauth.Authenticator
 	Client      *spotify.Client
 	ch          chan *spotify.Client
 	state       string
 	redirectURL string
 	url         string
+	Tracks      *spotify.PlaylistTrackPage
 }
 
-func NewPlaylist(ctx context.Context, redirectURL string) (*Playlist, error) {
+func NewPlaylist(ctx context.Context, redirectURL string, id spotify.ID) (*Playlist, error) {
 	var s = &Playlist{
+		ID:          id,
 		auth:        newAuth(redirectURL),
 		ch:          make(chan *spotify.Client),
 		state:       "abc123",

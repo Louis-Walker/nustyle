@@ -1994,3 +1994,10 @@
 [22/06/22 19:23:52] GetNewestTracks: Get "https://api.spotify.com/v1/artists/1OKLZ6g7k4btXpP37eCnVO/albums?include_groups=album%2Csingle": context canceled
 [22/06/22 19:23:52] GetNewestTracks: Get "https://api.spotify.com/v1/artists/5KENAwkg6GClWnY28tokF8/albums?include_groups=album%2Csingle": context canceled
 [22/06/23 16:48:50] main/Main playlist crawler: stream error: stream ID 203; PROTOCOL_ERROR; received from peer
+[22/06/23 17:31:26] main/Main playlist crawler: Invalid playlist Id
+[22/06/23 17:33:57] main/Main playlist crawler: Invalid playlist Id
+[22/06/23 17:34:15] main/Main playlist crawler: Invalid playlist Id
+[22/06/23 17:39:45] main/Main playlist crawler: Invalid playlist Id
+[22/06/23 17:40:37] main/Main playlist crawler: Invalid playlist Id
+[22/06/23 17:41:23] main/Main playlist crawler: Invalid playlist Id
+[22/06/23 17:42:55] main/Main playlist crawler: Invalid playlist Id

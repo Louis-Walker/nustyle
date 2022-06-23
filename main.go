@@ -6,63 +6,66 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"runtime"
 	"time"
 
 	"github.com/zmb3/spotify/v2"
 )
 
-type Nustyle struct {
+var (
 	pathToDB, redirectURL, userID string
-	playlistID                    spotify.ID
 	playlist                      *Playlist
 	artistsDB                     *sql.DB
-	playlistTracks                *spotify.PlaylistTrackPage
-}
+	pid                           spotify.ID
+)
 
 func main() {
-	var nu Nustyle = Nustyle{
-		pathToDB:    "./artistdb/artistsDEV.db",
-		playlistID:  "3uzLhwcuH1KpmeCPWMqnQl",
-		redirectURL: "http://localhost:8080/auth/callback",
-		userID:      "m05hi",
-	}
+	if isProd() {
+		pathToDB = "./artistdb/artists.db"
+		redirectURL = "http://quiet-reaches-27997.herokuapp.com/auth/callback"
+		pid = "0TdRzSP9GMdDcnuZd7wSTE"
+	} else {
+		pathToDB = "./artistdb/artistsDEV.db"
+		redirectURL = "http://localhost:8080/auth/callback"
+		pid = "3uzLhwcuH1KpmeCPWMqnQl"
 
-	prodCheck(&nu) //Check environment
+		cmd := exec.Command("cmd", "/c", "start", "http://localhost:8080")
+		cmd.Start()
+	}
+	userID = "m05hi"
 
 	// Connections
 	var err error
-	nu.artistsDB = OpenArtistDB(nu.pathToDB)
-	nu.playlist, err = NewPlaylist(context.Background(), nu.redirectURL)
+	artistsDB = OpenArtistDB(pathToDB)
+	playlist, err = NewPlaylist(context.Background(), redirectURL, pid)
 	if err != nil {
 		cLog("main", err)
 	}
 
-	spo := nu.playlist.Client // Easier short hand
+	spo := playlist.Client // Easier short hand
 
 	// Main playlist crawler
 	go func() {
 		for {
 			fmt.Println("[NU] Initiating Release Crawler")
-			artists := GetAllArtists(nu.artistsDB)
+			artists := GetAllArtists(artistsDB)
 			artistsUpdated := 0
 
 			var err error
-			nu.playlistTracks, err = spo.GetPlaylistTracks(context.Background(), nu.playlistID)
+			playlist.Tracks, err = spo.GetPlaylistTracks(context.Background(), playlist.ID)
 			if err != nil {
 				cLog("main/Main playlist crawler", err)
 			}
 
 			for _, artist := range artists {
-				trackIDs := nu.playlist.GetNewestTracks(context.Background(), artist, nu.playlistTracks)
+				trackIDs := playlist.GetNewestTracks(context.Background(), artist, playlist.Tracks)
 
 				if len(trackIDs) > 0 {
-					_, err := spo.AddTracksToPlaylist(context.Background(), nu.playlistID, trackIDs...)
+					_, err := spo.AddTracksToPlaylist(context.Background(), playlist.ID, trackIDs...)
 					if err != nil {
 						cLog("main/Main playlist crawler", err)
 					}
 
-					UpdateLastTrack(nu.artistsDB, artist.SUI)
+					UpdateLastTrack(artistsDB, artist.SUI)
 					fmt.Printf("Updated: %v, Tracks: %v\n", artist.Name, len(trackIDs))
 					artistsUpdated += 1
 				} else {
@@ -72,7 +75,7 @@ func main() {
 			}
 
 			fmt.Printf("[NU] Crawl Completed At %v - %v/%v Artists Updated\n", time.Now().Format("06-01-02 15:04:05"), artistsUpdated, len(artists))
-			weeklyUpdater(nu)
+			weeklyUpdater()
 			time.Sleep(time.Minute * 30)
 		}
 	}()
@@ -87,26 +90,18 @@ func main() {
 	}
 }
 
-func prodCheck(nu *Nustyle) {
-	if len(os.Args) == 1 {
-		// Automatically open browser for auth if in local env
-		if runtime.GOOS == "windows" {
-			cmd := exec.Command("cmd", "/c", "start", "http://localhost:8080")
-			cmd.Start()
-		}
-	} else if len(os.Args) > 1 {
-		if os.Args[1] == "-p" {
-			nu.pathToDB = "./artistdb/artists.db"
-			nu.redirectURL = "http://quiet-reaches-27997.herokuapp.com/auth/callback"
-			nu.playlistID = "0TdRzSP9GMdDcnuZd7wSTE"
-		}
+func isProd() bool {
+	if len(os.Args) > 1 {
+		return true
+	} else {
+		return false
 	}
 }
 
-func weeklyUpdater(nu Nustyle) {
+func weeklyUpdater() {
 	// Only updates playlist if its past 5pm on monday
-	if int(time.Now().Weekday()) == 1 && time.Now().Hour() > 17 && len(nu.playlistTracks.Tracks) > 20 {
-		nu.playlist.UpdatePlaylist(context.Background(), nu.playlistID, nu.userID)
+	if int(time.Now().Weekday()) == 1 && time.Now().Hour() > 17 && len(playlist.Tracks.Tracks) > 20 {
+		playlist.UpdatePlaylist(context.Background(), playlist.ID, userID)
 		fmt.Printf("[NU] New Playlist Created - Main Playlist Cleared\n")
 	}
 }
