@@ -94,29 +94,32 @@ func Playlister(p *Playlist) {
 }
 
 func (p *Playlist) getNewestTracks(ctx context.Context, a Artist, t *spotify.PlaylistTrackPage) []spotify.ID {
-	var newTracks []spotify.ID = []spotify.ID{}
+	newTracks := []spotify.ID{}
 
 	albums, err := p.Client.GetArtistAlbums(ctx, spotify.ID(a.SUI), []spotify.AlbumType{1, 2})
 	if err != nil {
 		cLog("Playlist/GetNewestTracks", err)
 		return newTracks
 	} else {
+		albumCounter := 0
 		for _, album := range albums.Albums {
-			albumCounter := 0
+			albumCounter++
 
 			// Limit amount of checks but theres 3 album types and type: album is first.
 			// Fixes singles not getting checked if artist has more than 4 albums but also has a new single.
-			if !(albumCounter >= 4 && album.AlbumType == "album") {
-				if isNew(album.ReleaseDateTime(), a.LastTrackDateTime) {
-					tracks, err := p.Client.GetAlbumTracks(ctx, album.ID)
-					if err != nil {
-						cLog("Playlist/GetNewestTracks", err)
-					}
+			if albumCounter >= 4 && album.AlbumType == "album" {
+				continue
+			}
 
-					for _, track := range tracks.Tracks {
-						if !isAdded(t, track.ID, track.Name) && !isExtended(track.Name) {
-							newTracks = append(newTracks, track.ID)
-						}
+			if isNew(album.ReleaseDateTime(), a.LastTrackDateTime) {
+				tracks, err := p.Client.GetAlbumTracks(ctx, album.ID)
+				if err != nil {
+					cLog("Playlist/GetNewestTracks", err)
+				}
+
+				for _, track := range tracks.Tracks {
+					if !isAdded(t, track.ID, track.Name) && !isExtended(track.Name) {
+						newTracks = append(newTracks, track.ID)
 					}
 				}
 			}
