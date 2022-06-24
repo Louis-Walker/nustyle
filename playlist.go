@@ -25,7 +25,7 @@ type Playlist struct {
 }
 
 func NewPlaylist(ctx context.Context, redirectURL string, id spotify.ID) (*Playlist, error) {
-	var s = &Playlist{
+	var p = &Playlist{
 		ID:          id,
 		auth:        newAuth(redirectURL),
 		ch:          make(chan *spotify.Client),
@@ -33,44 +33,67 @@ func NewPlaylist(ctx context.Context, redirectURL string, id spotify.ID) (*Playl
 		redirectURL: redirectURL,
 	}
 
-	http.HandleFunc("/", handleRoot)
-	http.HandleFunc("/auth", func(w http.ResponseWriter, r *http.Request) { handleAuth(w, r, *s) })
-	http.HandleFunc("/auth/callback", func(w http.ResponseWriter, r *http.Request) { completeAuth(w, r, *s) })
+	http.HandleFunc("/auth", func(w http.ResponseWriter, r *http.Request) { handleAuth(w, r, *p) })
+	http.HandleFunc("/auth/callback", func(w http.ResponseWriter, r *http.Request) { completeAuth(w, r, *p) })
 
-	go func() {
-		port := os.Getenv("PORT")
+	p.url = p.auth.AuthURL(p.state)
 
-		if port == "" {
-			log.Fatalf("No PORT specified!")
-		}
-
-		fmt.Println("Listening on port: " + port)
-		err := http.ListenAndServe(fmt.Sprintf(":%v", port), nil)
-		if err != nil {
-			cLog("spotifyService/New", err)
-		}
-	}()
-
-	s.url = s.auth.AuthURL(s.state)
-
-	client := <-s.ch
+	client := <-p.ch
 
 	user, err := client.CurrentUser(ctx)
 	if err != nil {
-		cLog("spotifyService/New", err)
+		cLog("Playlist/New", err)
 	}
 
 	fmt.Println("You are logged in as:", user.ID)
-	s.Client = client
-	return s, err
+	p.Client = client
+	return p, err
 }
 
-func (s *Playlist) GetNewestTracks(ctx context.Context, a Artist, t *spotify.PlaylistTrackPage) []spotify.ID {
+func (p *Playlist) Playlister() {
+	spo := playlist.Client // Easier short hand
+
+	for {
+		fmt.Println("[NU] Initiating Release Crawler")
+		artists := GetAllArtists(artistsDB)
+		artistsUpdated := 0
+
+		var err error
+		playlist.Tracks, err = spo.GetPlaylistTracks(context.Background(), playlist.ID)
+		if err != nil {
+			cLog("Playlist/Playlister", err)
+		}
+
+		for _, artist := range artists {
+			trackIDs := playlist.GetNewestTracks(context.Background(), artist, playlist.Tracks)
+
+			if len(trackIDs) > 0 {
+				_, err := spo.AddTracksToPlaylist(context.Background(), playlist.ID, trackIDs...)
+				if err != nil {
+					cLog("Playlist/Playlister", err)
+				}
+
+				UpdateLastTrack(artistsDB, artist.SUI)
+				fmt.Printf("Updated: %v, Tracks: %v\n", artist.Name, len(trackIDs))
+				artistsUpdated += 1
+			} else {
+				fmt.Println(artist.Name)
+			}
+			// time.Sleep(time.Second / 3)
+		}
+
+		fmt.Printf("[NU] Crawl Completed At %v - %v/%v Artists Updated\n", time.Now().Format("06-01-02 15:04:05"), artistsUpdated, len(artists))
+		weeklyUpdater()
+		time.Sleep(time.Minute * 30)
+	}
+}
+
+func (p *Playlist) GetNewestTracks(ctx context.Context, a Artist, t *spotify.PlaylistTrackPage) []spotify.ID {
 	var newTracks []spotify.ID = []spotify.ID{}
 
-	albums, err := s.Client.GetArtistAlbums(ctx, spotify.ID(a.SUI), []spotify.AlbumType{1, 2})
+	albums, err := p.Client.GetArtistAlbums(ctx, spotify.ID(a.SUI), []spotify.AlbumType{1, 2})
 	if err != nil {
-		cLog("GetNewestTracks", err)
+		cLog("Playlist/GetNewestTracks", err)
 		return newTracks
 	} else {
 		for i, album := range albums.Albums {
@@ -80,9 +103,9 @@ func (s *Playlist) GetNewestTracks(ctx context.Context, a Artist, t *spotify.Pla
 
 			// Limit amount of checks... don't need to check whole library
 			if isNew(album.ReleaseDateTime(), a.LastTrackDateTime) {
-				tracks, err := s.Client.GetAlbumTracks(ctx, album.ID)
+				tracks, err := p.Client.GetAlbumTracks(ctx, album.ID)
 				if err != nil {
-					cLog("GetNewestTracks", err)
+					cLog("Playlist/GetNewestTracks", err)
 				}
 
 				for _, track := range tracks.Tracks {
@@ -97,12 +120,12 @@ func (s *Playlist) GetNewestTracks(ctx context.Context, a Artist, t *spotify.Pla
 	}
 }
 
-func (s *Playlist) UpdatePlaylist(ctx context.Context, pid spotify.ID, uid string) {
-	c := s.Client
+func (p *Playlist) UpdatePlaylist(ctx context.Context, pid spotify.ID, uid string) {
+	spo := p.Client
 
-	playlist, err := c.GetPlaylist(ctx, pid)
+	playlist, err := spo.GetPlaylist(ctx, pid)
 	if err != nil {
-		cLog("UpdatePlaylist", err)
+		cLog("Playlist/UpdatePlaylist", err)
 	}
 	oldName := playlist.Name
 
@@ -110,22 +133,22 @@ func (s *Playlist) UpdatePlaylist(ctx context.Context, pid spotify.ID, uid strin
 	_, nowMonth, nowDay := time.Now().Date()
 	newName := fmt.Sprintf("Nustyle %v/%v", nowDay, int(nowMonth))
 
-	err = c.ChangePlaylistName(ctx, pid, newName)
+	err = spo.ChangePlaylistName(ctx, pid, newName)
 	if err != nil {
-		cLog("UpdatePlaylist", err)
+		cLog("Playlist/UpdatePlaylist", err)
 	}
 
 	// COPY TO NEW PLAYLIST
 	var fp *spotify.FullPlaylist
-	fp, err = c.CreatePlaylistForUser(ctx, uid, oldName, "", false, false)
+	fp, err = spo.CreatePlaylistForUser(ctx, uid, oldName, "", false, false)
 	if err != nil {
-		cLog("UpdatePlaylist", err)
+		cLog("Playlist/UpdatePlaylist", err)
 	}
 
 	var tracks *spotify.PlaylistItemPage
-	tracks, err = c.GetPlaylistItems(ctx, pid)
+	tracks, err = spo.GetPlaylistItems(ctx, pid)
 	if err != nil {
-		cLog("UpdatePlaylist", err)
+		cLog("Playlist/UpdatePlaylist", err)
 	}
 
 	var trackIDs []spotify.ID
@@ -133,12 +156,20 @@ func (s *Playlist) UpdatePlaylist(ctx context.Context, pid spotify.ID, uid strin
 		tID := tracks.Items[i].Track.Track.ID
 		trackIDs = append(trackIDs, tID)
 	}
-	s.Client.AddTracksToPlaylist(ctx, fp.ID, trackIDs...)
+	p.Client.AddTracksToPlaylist(ctx, fp.ID, trackIDs...)
 
 	//CLEAN MAIN PLAYLIST
-	_, err = s.Client.RemoveTracksFromPlaylist(ctx, pid, trackIDs...)
+	_, err = p.Client.RemoveTracksFromPlaylist(ctx, pid, trackIDs...)
 	if err != nil {
-		cLog("UpdatePlaylist", err)
+		cLog("Playlist/UpdatePlaylist", err)
+	}
+}
+
+func weeklyUpdater() {
+	// Only updates playlist if its past 5pm on monday
+	if int(time.Now().Weekday()) == 1 && time.Now().Hour() > 17 && len(playlist.Tracks.Tracks) > 20 {
+		playlist.UpdatePlaylist(context.Background(), playlist.ID, userID)
+		fmt.Printf("[NU] New Playlist Created - Main Playlist Cleared\n")
 	}
 }
 
@@ -171,14 +202,6 @@ func isExtended(t string) bool {
 	return false
 }
 
-func handleRoot(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "<p>Sign into <a href='auth'>Spotify</a></p>")
-}
-
-func handleAuth(w http.ResponseWriter, r *http.Request, s Playlist) {
-	http.Redirect(w, r, s.url, http.StatusFound)
-}
-
 func newAuth(redirectURL string) *spotifyauth.Authenticator {
 	return spotifyauth.New(
 		spotifyauth.WithRedirectURL(redirectURL),
@@ -190,6 +213,10 @@ func newAuth(redirectURL string) *spotifyauth.Authenticator {
 		spotifyauth.WithClientID(os.Getenv("SPOTIFY_ID")),
 		spotifyauth.WithClientSecret(os.Getenv("SPOTIFY_SECRET")),
 	)
+}
+
+func handleAuth(w http.ResponseWriter, r *http.Request, s Playlist) {
+	http.Redirect(w, r, s.url, http.StatusFound)
 }
 
 func completeAuth(w http.ResponseWriter, r *http.Request, s Playlist) {

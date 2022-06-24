@@ -19,10 +19,6 @@ var (
 	pid                           spotify.ID
 )
 
-// pathToDB = "./artistdb/artists.db"
-// redirectURL = "http://quiet-reaches-27997.herokuapp.com/auth/callback"
-// pid = "0TdRzSP9GMdDcnuZd7wSTE"
-
 func main() {
 	var err error
 	pathToDB = os.Getenv("PATH_TO_DB")
