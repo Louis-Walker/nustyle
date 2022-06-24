@@ -4,9 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
+	"net/http"
 	"os"
 	"os/exec"
-	"time"
 
 	"github.com/zmb3/spotify/v2"
 )
@@ -18,76 +19,52 @@ var (
 	pid                           spotify.ID
 )
 
-func main() {
-	if isProd() {
-		pathToDB = "./artistdb/artists.db"
-		redirectURL = "http://quiet-reaches-27997.herokuapp.com/auth/callback"
-		pid = "0TdRzSP9GMdDcnuZd7wSTE"
-	} else {
-		pathToDB = "./artistdb/artistsDEV.db"
-		redirectURL = "http://localhost:8080/auth/callback"
-		pid = "3uzLhwcuH1KpmeCPWMqnQl"
+// pathToDB = "./artistdb/artists.db"
+// redirectURL = "http://quiet-reaches-27997.herokuapp.com/auth/callback"
+// pid = "0TdRzSP9GMdDcnuZd7wSTE"
 
-		cmd := exec.Command("cmd", "/c", "start", "http://localhost:8080")
-		cmd.Start()
-	}
+func main() {
+	var err error
+	pathToDB = os.Getenv("PATH_TO_DB")
+	redirectURL = os.Getenv("REDIRECT_URL")
+	pid = spotify.ID(os.Getenv("PLAYLIST_ID"))
 	userID = "m05hi"
 
+	go server()
+
 	// Connections
-	var err error
 	artistsDB = OpenArtistDB(pathToDB)
 	playlist, err = NewPlaylist(context.Background(), redirectURL, pid)
 	if err != nil {
 		cLog("main", err)
 	}
 
-	spo := playlist.Client // Easier short hand
-
 	// Main playlist crawler
-	go func() {
-		for {
-			fmt.Println("[NU] Initiating Release Crawler")
-			artists := GetAllArtists(artistsDB)
-			artistsUpdated := 0
+	go playlist.Playlister()
 
-			var err error
-			playlist.Tracks, err = spo.GetPlaylistTracks(context.Background(), playlist.ID)
-			if err != nil {
-				cLog("main/Main playlist crawler", err)
-			}
-
-			for _, artist := range artists {
-				trackIDs := playlist.GetNewestTracks(context.Background(), artist, playlist.Tracks)
-
-				if len(trackIDs) > 0 {
-					_, err := spo.AddTracksToPlaylist(context.Background(), playlist.ID, trackIDs...)
-					if err != nil {
-						cLog("main/Main playlist crawler", err)
-					}
-
-					UpdateLastTrack(artistsDB, artist.SUI)
-					fmt.Printf("Updated: %v, Tracks: %v\n", artist.Name, len(trackIDs))
-					artistsUpdated += 1
-				} else {
-					fmt.Println(artist.Name)
-				}
-				// time.Sleep(time.Second / 3)
-			}
-
-			fmt.Printf("[NU] Crawl Completed At %v - %v/%v Artists Updated\n", time.Now().Format("06-01-02 15:04:05"), artistsUpdated, len(artists))
-			weeklyUpdater()
-			time.Sleep(time.Minute * 30)
-		}
-	}()
-
-	for {
-		var input string
-		fmt.Scan(&input)
-
-		if input == "terminate" {
-			break
-		}
+	if !(isProd()) {
+		cmd := exec.Command("cmd", "/c", "start", "http://localhost:8080")
+		cmd.Start()
 	}
+}
+
+func server() {
+	http.HandleFunc("/", handleRoot)
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		log.Fatalf("No PORT specified!")
+	}
+
+	fmt.Println("Listening on port: " + port)
+	err := http.ListenAndServe(fmt.Sprintf(":%v", port), nil)
+	if err != nil {
+		cLog("main/server", err)
+	}
+}
+
+func handleRoot(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "<p>Sign into <a href='auth'>Spotify</a></p>")
 }
 
 func isProd() bool {
@@ -95,13 +72,5 @@ func isProd() bool {
 		return true
 	} else {
 		return false
-	}
-}
-
-func weeklyUpdater() {
-	// Only updates playlist if its past 5pm on monday
-	if int(time.Now().Weekday()) == 1 && time.Now().Hour() > 17 && len(playlist.Tracks.Tracks) > 20 {
-		playlist.UpdatePlaylist(context.Background(), playlist.ID, userID)
-		fmt.Printf("[NU] New Playlist Created - Main Playlist Cleared\n")
 	}
 }
