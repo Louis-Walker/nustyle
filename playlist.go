@@ -24,7 +24,7 @@ type Playlist struct {
 	Tracks      *spotify.PlaylistTrackPage
 }
 
-func NewPlaylist(ctx context.Context, redirectURL string, id spotify.ID) (*Playlist, error) {
+func NewPlaylist(redirectURL string, id spotify.ID) (*Playlist, error) {
 	var p = &Playlist{
 		ID:          id,
 		auth:        newAuth(redirectURL),
@@ -32,6 +32,8 @@ func NewPlaylist(ctx context.Context, redirectURL string, id spotify.ID) (*Playl
 		state:       "abc123",
 		redirectURL: redirectURL,
 	}
+
+	ctx := context.Background()
 
 	http.HandleFunc("/auth", func(w http.ResponseWriter, r *http.Request) { handleAuth(w, r, *p) })
 	http.HandleFunc("/auth/callback", func(w http.ResponseWriter, r *http.Request) { completeAuth(w, r, *p) })
@@ -47,34 +49,36 @@ func NewPlaylist(ctx context.Context, redirectURL string, id spotify.ID) (*Playl
 
 	fmt.Println("You are logged in as:", user.ID)
 	p.Client = client
+	defer ctx.Done()
 	return p, err
 }
 
-func (p *Playlist) Playlister() {
-	spo := playlist.Client // Easier short hand
+func Playlister(p *Playlist) {
+	spo := p.Client // Easier short hand
 
 	for {
 		fmt.Println("[NU] Initiating Release Crawler")
 		artists := GetAllArtists(artistsDB)
 		artistsUpdated := 0
+		ctx := context.Background()
 
 		var err error
-		playlist.Tracks, err = spo.GetPlaylistTracks(context.Background(), playlist.ID)
+		playlist.Tracks, err = spo.GetPlaylistTracks(ctx, p.ID)
 		if err != nil {
 			cLog("Playlist/Playlister", err)
 		}
 
 		for _, artist := range artists {
-			trackIDs := playlist.GetNewestTracks(context.Background(), artist, playlist.Tracks)
+			trackIDs := p.getNewestTracks(ctx, artist, p.Tracks)
 
 			if len(trackIDs) > 0 {
-				_, err := spo.AddTracksToPlaylist(context.Background(), playlist.ID, trackIDs...)
+				_, err := spo.AddTracksToPlaylist(ctx, p.ID, trackIDs...)
 				if err != nil {
 					cLog("Playlist/Playlister", err)
 				}
 
 				UpdateLastTrack(artistsDB, artist.SUI)
-				fmt.Printf("Updated: %v, Tracks: %v\n", artist.Name, len(trackIDs))
+				fmt.Printf("%v | Updated %v tracks\n", artist.Name, len(trackIDs))
 				artistsUpdated += 1
 			} else {
 				fmt.Println(artist.Name)
@@ -83,12 +87,13 @@ func (p *Playlist) Playlister() {
 		}
 
 		fmt.Printf("[NU] Crawl Completed At %v - %v/%v Artists Updated\n", time.Now().Format("06-01-02 15:04:05"), artistsUpdated, len(artists))
-		weeklyUpdater()
+		weeklyUpdater(ctx)
+		defer ctx.Done()
 		time.Sleep(time.Minute * 30)
 	}
 }
 
-func (p *Playlist) GetNewestTracks(ctx context.Context, a Artist, t *spotify.PlaylistTrackPage) []spotify.ID {
+func (p *Playlist) getNewestTracks(ctx context.Context, a Artist, t *spotify.PlaylistTrackPage) []spotify.ID {
 	var newTracks []spotify.ID = []spotify.ID{}
 
 	albums, err := p.Client.GetArtistAlbums(ctx, spotify.ID(a.SUI), []spotify.AlbumType{1, 2})
@@ -96,21 +101,22 @@ func (p *Playlist) GetNewestTracks(ctx context.Context, a Artist, t *spotify.Pla
 		cLog("Playlist/GetNewestTracks", err)
 		return newTracks
 	} else {
-		for i, album := range albums.Albums {
-			if i >= 10 {
-				break
-			}
+		for _, album := range albums.Albums {
+			albumCounter := 0
 
-			// Limit amount of checks... don't need to check whole library
-			if isNew(album.ReleaseDateTime(), a.LastTrackDateTime) {
-				tracks, err := p.Client.GetAlbumTracks(ctx, album.ID)
-				if err != nil {
-					cLog("Playlist/GetNewestTracks", err)
-				}
+			// Limit amount of checks but theres 3 album types and type: album is first.
+			// Fixes singles not getting checked if artist has more than 4 albums but also has a new single.
+			if !(albumCounter >= 4 && album.AlbumType == "album") {
+				if isNew(album.ReleaseDateTime(), a.LastTrackDateTime) {
+					tracks, err := p.Client.GetAlbumTracks(ctx, album.ID)
+					if err != nil {
+						cLog("Playlist/GetNewestTracks", err)
+					}
 
-				for _, track := range tracks.Tracks {
-					if !isAdded(t, track.ID, track.Name) && !isExtended(track.Name) {
-						newTracks = append(newTracks, track.ID)
+					for _, track := range tracks.Tracks {
+						if !isAdded(t, track.ID, track.Name) && !isExtended(track.Name) {
+							newTracks = append(newTracks, track.ID)
+						}
 					}
 				}
 			}
@@ -120,7 +126,7 @@ func (p *Playlist) GetNewestTracks(ctx context.Context, a Artist, t *spotify.Pla
 	}
 }
 
-func (p *Playlist) UpdatePlaylist(ctx context.Context, pid spotify.ID, uid string) {
+func (p *Playlist) updatePlaylist(ctx context.Context, pid spotify.ID, uid string) {
 	spo := p.Client
 
 	playlist, err := spo.GetPlaylist(ctx, pid)
@@ -165,10 +171,10 @@ func (p *Playlist) UpdatePlaylist(ctx context.Context, pid spotify.ID, uid strin
 	}
 }
 
-func weeklyUpdater() {
+func weeklyUpdater(ctx context.Context) {
 	// Only updates playlist if its past 5pm on monday
 	if int(time.Now().Weekday()) == 1 && time.Now().Hour() > 17 && len(playlist.Tracks.Tracks) > 20 {
-		playlist.UpdatePlaylist(context.Background(), playlist.ID, userID)
+		playlist.updatePlaylist(context.Background(), playlist.ID, userID)
 		fmt.Printf("[NU] New Playlist Created - Main Playlist Cleared\n")
 	}
 }

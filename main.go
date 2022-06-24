@@ -1,7 +1,7 @@
 package main
 
 import (
-	"context"
+	"bufio"
 	"database/sql"
 	"fmt"
 	"log"
@@ -28,19 +28,26 @@ func main() {
 
 	go server()
 
-	// Connections
-	artistsDB = OpenArtistDB(pathToDB)
-	playlist, err = NewPlaylist(context.Background(), redirectURL, pid)
-	if err != nil {
-		cLog("main", err)
-	}
-
-	// Main playlist crawler
-	go playlist.Playlister()
-
 	if !(isProd()) {
 		cmd := exec.Command("cmd", "/c", "start", "http://localhost:8080")
 		cmd.Start()
+	}
+
+	// Connections
+	artistsDB = OpenArtistDB(pathToDB)
+	playlist, err = NewPlaylist(redirectURL, pid)
+	if err != nil {
+		cLog("main/main", err)
+	}
+
+	// Main playlist crawler
+	go Playlister(playlist)
+
+	// Keeps service open until command entered to terminate
+	reader := bufio.NewReader(os.Stdin)
+	txt, _ := reader.ReadString('\n')
+	if txt == "terminate" {
+		os.Exit(0)
 	}
 }
 
