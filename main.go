@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/zmb3/spotify/v2"
 )
@@ -41,18 +42,20 @@ func main() {
 	}
 
 	// Main playlist crawler
-	go Playlister(playlist)
+	go playlist.Playlister()
 
 	// Keeps service open until command entered to terminate
 	reader := bufio.NewReader(os.Stdin)
-	txt, _ := reader.ReadString('\n')
-	if txt == "terminate" {
+	cmd, _ := reader.ReadString('\n')
+	if cmd == "terminate" {
 		os.Exit(0)
 	}
 }
 
 func server() {
 	http.HandleFunc("/", handleRoot)
+	http.HandleFunc("/artist/add", addArtist)
+	http.HandleFunc("/artist/remove", removeArtist)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -68,6 +71,18 @@ func server() {
 
 func handleRoot(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "<p>Sign into <a href='auth'>Spotify</a></p>")
+}
+
+func addArtist(w http.ResponseWriter, r *http.Request) {
+	name := r.URL.Query().Get("name")
+	SUI := spotify.ID(r.URL.Query().Get("sui"))
+	AddArtist(artistsDB, Artist{name, SUI, time.Now()})
+}
+
+func removeArtist(w http.ResponseWriter, r *http.Request) {
+	name := r.URL.Query().Get("name")
+	SUI := spotify.ID(r.URL.Query().Get("sui"))
+	RemoveArtist(artistsDB, Artist{name, SUI, time.Now()})
 }
 
 func isProd() bool {

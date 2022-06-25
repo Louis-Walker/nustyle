@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"strings"
@@ -29,7 +30,7 @@ func NewPlaylist(redirectURL string, id spotify.ID) (*Playlist, error) {
 		ID:          id,
 		auth:        newAuth(redirectURL),
 		ch:          make(chan *spotify.Client),
-		state:       "abc123",
+		state:       fmt.Sprint(time.Now().Unix() * rand.Int63()),
 		redirectURL: redirectURL,
 	}
 
@@ -53,7 +54,7 @@ func NewPlaylist(redirectURL string, id spotify.ID) (*Playlist, error) {
 	return p, err
 }
 
-func Playlister(p *Playlist) {
+func (p *Playlist) Playlister() {
 	spo := p.Client // Easier short hand
 
 	for {
@@ -103,15 +104,13 @@ func (p *Playlist) getNewestTracks(ctx context.Context, a Artist, t *spotify.Pla
 	} else {
 		albumCounter := 0
 		for _, album := range albums.Albums {
-			albumCounter++
-
 			// Limit amount of checks but theres 3 album types and type: album is first.
 			// Fixes singles not getting checked if artist has more than 4 albums but also has a new single.
 			if albumCounter >= 4 && album.AlbumType == "album" {
 				continue
 			}
 
-			if isNew(album.ReleaseDateTime(), a.LastTrackDateTime) {
+			if isNew(album.ReleaseDateTime(), a.LastTrackDateTime) && albumCounter <= 8 {
 				tracks, err := p.Client.GetAlbumTracks(ctx, album.ID)
 				if err != nil {
 					cLog("Playlist/GetNewestTracks", err)
@@ -122,6 +121,8 @@ func (p *Playlist) getNewestTracks(ctx context.Context, a Artist, t *spotify.Pla
 						newTracks = append(newTracks, track.ID)
 					}
 				}
+
+				albumCounter++
 			}
 		}
 
@@ -177,7 +178,7 @@ func (p *Playlist) updatePlaylist(ctx context.Context, pid spotify.ID, uid strin
 func weeklyUpdater(ctx context.Context) {
 	// Only updates playlist if its past 5pm on monday
 	if int(time.Now().Weekday()) == 1 && time.Now().Hour() > 17 && len(playlist.Tracks.Tracks) > 20 {
-		playlist.updatePlaylist(context.Background(), playlist.ID, userID)
+		playlist.updatePlaylist(ctx, playlist.ID, userID)
 		fmt.Printf("[NU] New Playlist Created - Main Playlist Cleared\n")
 	}
 }

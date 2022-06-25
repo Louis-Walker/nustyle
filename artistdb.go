@@ -5,6 +5,7 @@ import (
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/zmb3/spotify/v2"
 )
 
 func OpenArtistDB(path string) *sql.DB {
@@ -50,7 +51,7 @@ func GetAllArtists(db *sql.DB) []Artist {
 	return artists
 }
 
-func UpdateLastTrack(db *sql.DB, SUI string) {
+func UpdateLastTrack(db *sql.DB, SUI spotify.ID) {
 	stmt, err := db.Prepare("UPDATE Artists SET LastTrackDateTime = ? WHERE SUI = ?")
 	if err != nil {
 		cLog("artistsdb/UpdateLastTrack", err)
@@ -78,7 +79,20 @@ func AddArtist(db *sql.DB, a Artist) {
 	}
 }
 
-func artistExists(db *sql.DB, SUI string) bool {
+func RemoveArtist(db *sql.DB, a Artist) {
+	stmt, err := db.Prepare("DELETE FROM Artists WHERE SUI = ?")
+	if err != nil {
+		cLog("artistsdb/RemoveArtist", err)
+	}
+
+	_, err = stmt.Exec(a.SUI)
+	if err != nil {
+		cLog("artistsdb/RemoveArtist", err)
+	}
+
+}
+
+func artistExists(db *sql.DB, SUI spotify.ID) bool {
 	stmt, err := db.Prepare("SELECT count(*) FROM Artists WHERE SUI = ?")
 	if err != nil {
 		cLog("artistsdb/artistExists", err)
