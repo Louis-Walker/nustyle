@@ -141,6 +141,9 @@ func (p *Playlist) getNewestTracks(ctx context.Context, a Artist) []spotify.ID {
 }
 
 func (p *Playlist) weeklyUpdater(ctx context.Context) {
+	fmt.Printf("%v | %v", int(time.Now().Weekday()), 1)
+	fmt.Printf("%v | %v", time.Now().Hour(), 17)
+	fmt.Printf("%v | %v", len(p.Tracks), 20)
 	// Only updates playlist if its past 5pm on monday
 	if int(time.Now().Weekday()) == 1 && time.Now().Hour() >= 17 && len(p.Tracks) > 20 {
 		p.updatePlaylist(ctx, userID)
