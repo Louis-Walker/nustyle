@@ -86,9 +86,5 @@ func removeArtist(w http.ResponseWriter, r *http.Request) {
 }
 
 func isProd() bool {
-	if len(os.Args) > 1 {
-		return true
-	} else {
-		return false
-	}
+	return len(os.Args) > 1
 }
