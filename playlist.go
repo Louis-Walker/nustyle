@@ -203,7 +203,7 @@ func isAdded(tracks []spotify.PlaylistTrack, id spotify.ID, name string) bool {
 	for i := 0; i < len(tracks); i++ {
 		t := tracks[i].Track
 		// Work around for still adding track released today without refreshing playlist for weeklyUpdater
-		if t.ID == id || t.Name == name {
+		if t.ID == id || t.Name == name && t.Album.ReleaseDateTime().Before(time.Now().Truncate(time.Hour*24).Add(-time.Minute*30)) {
 			return true
 		}
 	}
@@ -214,6 +214,7 @@ func isAdded(tracks []spotify.PlaylistTrack, id spotify.ID, name string) bool {
 func isNew(tDate time.Time, lDate time.Time) bool {
 	lElapsed := lDate.Truncate(time.Hour * 24).Add(-(time.Minute * 30))
 
+	fmt.Println(tDate, lDate, lElapsed)
 	if tDate.After(lElapsed) {
 		return true
 	}
