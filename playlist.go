@@ -58,7 +58,6 @@ func (p *Playlist) Playlister() {
 	spo := p.Client // Easier short hand
 
 	for {
-		fmt.Println("[NU] Initiating Release Crawler")
 		artists := GetAllArtists(artistsDB)
 		artistsUpdated := 0
 		ctx := context.Background()
@@ -69,6 +68,9 @@ func (p *Playlist) Playlister() {
 		}
 		p.Tracks = ptp.Tracks
 
+		p.weeklyUpdater(ctx)
+
+		fmt.Println("[NU] Initiating Release Crawler")
 		for _, artist := range artists {
 			trackIDs := p.getNewestTracks(ctx, artist)
 
@@ -88,7 +90,6 @@ func (p *Playlist) Playlister() {
 		}
 
 		fmt.Printf("[NU] Crawl Completed At %v - %v/%v Artists Updated\n", time.Now().Format("06-01-02 15:04:05"), artistsUpdated, len(artists))
-		go p.weeklyUpdater(ctx)
 		defer ctx.Done()
 		time.Sleep(time.Minute * 30)
 	}
@@ -141,9 +142,6 @@ func (p *Playlist) getNewestTracks(ctx context.Context, a Artist) []spotify.ID {
 }
 
 func (p *Playlist) weeklyUpdater(ctx context.Context) {
-	fmt.Printf("%v | %v", int(time.Now().Weekday()), 1)
-	fmt.Printf("%v | %v", time.Now().Hour(), 17)
-	fmt.Printf("%v | %v", len(p.Tracks), 20)
 	// Only updates playlist if its past 5pm on monday
 	if int(time.Now().Weekday()) == 1 && time.Now().Hour() >= 17 && len(p.Tracks) > 20 {
 		p.updatePlaylist(ctx, userID)
