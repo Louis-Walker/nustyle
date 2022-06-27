@@ -140,6 +140,14 @@ func (p *Playlist) getNewestTracks(ctx context.Context, a Artist) []spotify.ID {
 	}
 }
 
+func (p *Playlist) weeklyUpdater(ctx context.Context) {
+	// Only updates playlist if its past 5pm on monday
+	if int(time.Now().Weekday()) == 1 && time.Now().Hour() >= 17 && len(p.Tracks) > 20 {
+		p.updatePlaylist(ctx, userID)
+		fmt.Printf("[NU] New Playlist Created - Main Playlist Cleared\n")
+	}
+}
+
 func (p *Playlist) updatePlaylist(ctx context.Context, uid string) {
 	spo := p.Client
 
@@ -185,14 +193,6 @@ func (p *Playlist) updatePlaylist(ctx context.Context, uid string) {
 	}
 }
 
-func (p *Playlist) weeklyUpdater(ctx context.Context) {
-	// Only updates playlist if its past 5pm on monday
-	if int(time.Now().Weekday()) == 1 && time.Now().Hour() > 17 && len(p.Tracks) > 20 {
-		p.updatePlaylist(ctx, userID)
-		fmt.Printf("[NU] New Playlist Created - Main Playlist Cleared\n")
-	}
-}
-
 func isAdded(tracks []spotify.PlaylistTrack, id spotify.ID, name string) bool {
 	for i := 0; i < len(tracks); i++ {
 		t := tracks[i].Track
@@ -235,23 +235,24 @@ func newAuth(redirectURL string) *spotifyauth.Authenticator {
 	)
 }
 
-func handleAuth(w http.ResponseWriter, r *http.Request, s Playlist) {
-	http.Redirect(w, r, s.url, http.StatusFound)
+func handleAuth(w http.ResponseWriter, r *http.Request, p Playlist) {
+	http.Redirect(w, r, p.url, http.StatusFound)
 }
 
-func completeAuth(w http.ResponseWriter, r *http.Request, s Playlist) {
-	tok, err := s.auth.Token(r.Context(), s.state, r)
+func completeAuth(w http.ResponseWriter, r *http.Request, p Playlist) {
+	ctx := context.Background()
+	tok, err := p.auth.Token(ctx, p.state, r)
 	if err != nil {
 		http.Error(w, "Couldn't get token", http.StatusForbidden)
 		log.Fatal(err)
 	}
-	if st := r.FormValue("state"); st != s.state {
+	if st := r.FormValue("state"); st != p.state {
 		http.NotFound(w, r)
-		log.Fatalf("State mismatch: %s != %s\n", st, s.state)
+		log.Fatalf("State mismatch: %s != %s\n", st, p.state)
 	}
 
 	// use the token to get an authenticated client
-	client := spotify.New(s.auth.Client(r.Context(), tok), spotify.WithRetry(true))
+	client := spotify.New(p.auth.Client(ctx, tok), spotify.WithRetry(true))
 	fmt.Fprintf(w, "Login Completed!")
-	s.ch <- client
+	p.ch <- client
 }
