@@ -202,7 +202,8 @@ func (p *Playlist) updatePlaylist(ctx context.Context, uid string) {
 func isAdded(tracks []spotify.PlaylistTrack, id spotify.ID, name string) bool {
 	for i := 0; i < len(tracks); i++ {
 		t := tracks[i].Track
-		if t.ID == id || t.Name == name && t.Album.ReleaseDateTime().Before(time.Now().Truncate(time.Hour*24)) {
+		// Work around for still adding track released today without refreshing playlist
+		if t.ID == id || t.Name == name && t.Album.ReleaseDateTime().Before(time.Now().Truncate(time.Hour*24).Add(-time.Minute*30)) {
 			return true
 		}
 	}
