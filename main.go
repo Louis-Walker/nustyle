@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"database/sql"
 	"fmt"
 	"log"
@@ -44,11 +43,12 @@ func main() {
 	// Main playlist crawler
 	go playlist.Playlister()
 
-	// Keeps service open until command entered to terminate
-	reader := bufio.NewReader(os.Stdin)
-	cmd, _ := reader.ReadString('\n')
-	if cmd == "terminate" {
-		os.Exit(0)
+	exit := make(chan string)
+	for {
+		select {
+		case <-exit:
+			os.Exit(0)
+		}
 	}
 }
 
