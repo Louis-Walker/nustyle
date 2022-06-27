@@ -91,7 +91,7 @@ func (p *Playlist) Playlister() {
 
 		fmt.Printf("[NU] Crawl Completed At %v - %v/%v Artists Updated\n", time.Now().Format("06-01-02 15:04:05"), artistsUpdated, len(artists))
 		defer ctx.Done()
-		time.Sleep(time.Minute * 30)
+		time.Sleep(time.Minute * 28)
 	}
 }
 
