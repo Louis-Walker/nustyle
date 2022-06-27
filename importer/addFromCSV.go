@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/zmb3/spotify/v2"
+
 	nu "example.com/nustyle"
 )
 
@@ -38,7 +40,7 @@ func main() {
 
 		newArtist := nu.Artist{
 			Name:              a[i][0],
-			SUI:               a[i][1],
+			SUI:               spotify.ID(a[i][1]),
 			LastTrackDateTime: dateTime,
 		}
 

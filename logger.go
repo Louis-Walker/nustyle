@@ -8,7 +8,7 @@ import (
 )
 
 // Don't stop execution for an err and print err to log file
-func cLog(funcName string, err error) {
+func logger(funcName string, err error) {
 	errorMessage := fmt.Sprintf("[%v] %v: %v\n", time.Now().Format("06/01/02 15:04:05"), funcName, err)
 
 	fmt.Printf(errorMessage)

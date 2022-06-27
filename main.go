@@ -18,10 +18,10 @@ var (
 	playlist                      *Playlist
 	artistsDB                     *sql.DB
 	pid                           spotify.ID
+	err                           error
 )
 
 func main() {
-	var err error
 	pathToDB = os.Getenv("PATH_TO_DB")
 	redirectURL = os.Getenv("REDIRECT_URL")
 	pid = spotify.ID(os.Getenv("PLAYLIST_ID"))
@@ -38,7 +38,7 @@ func main() {
 	artistsDB = OpenArtistDB(pathToDB)
 	playlist, err = NewPlaylist(redirectURL, pid)
 	if err != nil {
-		cLog("main/main", err)
+		logger("main/main", err)
 	}
 
 	// Main playlist crawler
@@ -65,7 +65,7 @@ func server() {
 	fmt.Println("Listening on port: " + port)
 	err := http.ListenAndServe(fmt.Sprintf(":%v", port), nil)
 	if err != nil {
-		cLog("main/server", err)
+		logger("main/server", err)
 	}
 }
 
