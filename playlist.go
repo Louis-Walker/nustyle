@@ -72,7 +72,7 @@ func (p *Playlist) Playlister() {
 
 		fmt.Println("[NU] Initiating Release Crawler")
 		for _, artist := range artists {
-			trackIDs := p.getNewestTracks(ctx, artist)
+			trackIDs, trackArtists := p.getNewestTracks(ctx, artist)
 
 			if len(trackIDs) > 0 {
 				_, err := spo.AddTracksToPlaylist(ctx, p.ID, trackIDs...)
@@ -80,7 +80,7 @@ func (p *Playlist) Playlister() {
 					logger("Playlist/Playlister", err)
 				}
 
-				UpdateLastTrack(artistsDB, artist.SUI)
+				UpdateLastTrack(artistsDB, trackArtists)
 				fmt.Printf("%v | Updated %v tracks\n", artist.Name, len(trackIDs))
 				artistsUpdated += 1
 			} else {
@@ -95,13 +95,14 @@ func (p *Playlist) Playlister() {
 	}
 }
 
-func (p *Playlist) getNewestTracks(ctx context.Context, a Artist) []spotify.ID {
+func (p *Playlist) getNewestTracks(ctx context.Context, a Artist) ([]spotify.ID, []spotify.ID) {
 	newTracks := []spotify.ID{}
+	artists := []spotify.ID{}
 
 	albums, err := p.Client.GetArtistAlbums(ctx, spotify.ID(a.SUI), []spotify.AlbumType{1, 2})
 	if err != nil {
 		logger("Playlist/GetNewestTracks", err)
-		return newTracks
+		return newTracks, artists
 	} else {
 		albumCounter := 0
 		for _, album := range albums.Albums {
@@ -130,6 +131,10 @@ func (p *Playlist) getNewestTracks(ctx context.Context, a Artist) []spotify.ID {
 								},
 							},
 						})
+
+						for _, a := range track.Artists {
+							artists = append(artists, a.ID)
+						}
 					}
 				}
 
@@ -137,7 +142,7 @@ func (p *Playlist) getNewestTracks(ctx context.Context, a Artist) []spotify.ID {
 			}
 		}
 
-		return newTracks
+		return newTracks, artists
 	}
 }
 

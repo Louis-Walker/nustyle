@@ -7108,3 +7108,6 @@
 [22/06/25 10:40:49] Playlist/GetNewestTracks: Get "https://api.spotify.com/v1/artists/6uGp0FWe0jCSoKoQ5Vu8pQ/albums?include_groups=album%2Csingle": context canceled
 [22/06/25 10:40:49] Playlist/GetNewestTracks: Get "https://api.spotify.com/v1/artists/1OKLZ6g7k4btXpP37eCnVO/albums?include_groups=album%2Csingle": context canceled
 [22/06/25 10:40:49] Playlist/GetNewestTracks: Get "https://api.spotify.com/v1/artists/5KENAwkg6GClWnY28tokF8/albums?include_groups=album%2Csingle": context canceled
+[22/06/27 18:49:30] Playlist/GetNewestTracks: spotify: couldn't decode error: (95) [upstream connect error or disconnect/reset before headers. reset reason: connection termination]
+[22/06/27 18:49:34] Playlist/GetNewestTracks: spotify: couldn't decode error: (95) [upstream connect error or disconnect/reset before headers. reset reason: connection termination]
+[22/06/27 18:49:35] Playlist/GetNewestTracks: spotify: couldn't decode error: (95) [upstream connect error or disconnect/reset before headers. reset reason: connection termination]

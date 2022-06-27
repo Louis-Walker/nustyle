@@ -51,17 +51,19 @@ func GetAllArtists(db *sql.DB) []Artist {
 	return artists
 }
 
-func UpdateLastTrack(db *sql.DB, SUI spotify.ID) {
-	stmt, err := db.Prepare("UPDATE Artists SET LastTrackDateTime = ? WHERE SUI = ?")
-	if err != nil {
-		logger("artistsdb/UpdateLastTrack", err)
-	}
+func UpdateLastTrack(db *sql.DB, SUIs []spotify.ID) {
+	for _, SUI := range SUIs {
+		stmt, err := db.Prepare("UPDATE Artists SET LastTrackDateTime = ? WHERE SUI = ?")
+		if err != nil {
+			logger("artistsdb/UpdateLastTrack", err)
+		}
 
-	currentTime := time.Now().Format("2006-01-02 15:04:05+00:00")
+		currentTime := time.Now().Format("2006-01-02 15:04:05+00:00")
 
-	_, err = stmt.Exec(currentTime, SUI)
-	if err != nil {
-		logger("artistsdb/UpdateLastTrack", err)
+		_, err = stmt.Exec(currentTime, SUI)
+		if err != nil {
+			logger("artistsdb/UpdateLastTrack", err)
+		}
 	}
 }
 
