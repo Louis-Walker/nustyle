@@ -62,13 +62,13 @@ func (p *Playlist) Playlister() {
 		artistsUpdated := 0
 		ctx := context.Background()
 
+		p.weeklyUpdater(ctx)
+
 		ptp, err := spo.GetPlaylistTracks(ctx, p.ID)
 		if err != nil {
 			logger("Playlist/Playlister", err)
 		}
 		p.Tracks = ptp.Tracks
-
-		p.weeklyUpdater(ctx)
 
 		fmt.Println("[NU] Initiating Release Crawler")
 		for _, artist := range artists {
