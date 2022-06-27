@@ -212,9 +212,8 @@ func isAdded(tracks []spotify.PlaylistTrack, id spotify.ID, name string) bool {
 }
 
 func isNew(tDate time.Time, lDate time.Time) bool {
-	lElapsed := lDate.Truncate(time.Hour * 24).Add(-(time.Minute * 30))
+	lElapsed := time.Now().Truncate(time.Hour * 24).Add(-(time.Minute * 30))
 
-	fmt.Println(tDate, lDate, lElapsed)
 	if tDate.After(lElapsed) {
 		return true
 	}
