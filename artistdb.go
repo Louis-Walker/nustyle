@@ -8,7 +8,7 @@ import (
 	"github.com/zmb3/spotify/v2"
 )
 
-func OpenArtistDB(path string) *sql.DB {
+func OpenArtistDB(path string) (db *sql.DB) {
 	db, err := sql.Open("sqlite3", path)
 	if err != nil {
 		logger("artistsdb/OpenArtistDB", err)
@@ -16,26 +16,24 @@ func OpenArtistDB(path string) *sql.DB {
 
 	db.SetMaxOpenConns(1)
 
-	return db
+	return
 }
 
-func GetAllArtists(db *sql.DB) []Artist {
-	var artists []Artist
-
-	ar, err := db.Query("SELECT * FROM Artists")
+func GetAllArtists(db *sql.DB) (artists []Artist) {
+	aa, err := db.Query("SELECT * FROM Artists")
 	if err != nil {
 		logger("artistsdb/GetAllArtists", err)
 	}
-	defer ar.Close()
+	defer aa.Close()
 
-	for ar.Next() {
+	for aa.Next() {
 		var (
 			id                int
 			lastTrackDateTime string
 			a                 Artist
 		)
 
-		err := ar.Scan(&id, &a.Name, &a.SUI, &lastTrackDateTime)
+		err := aa.Scan(&id, &a.Name, &a.SUI, &lastTrackDateTime)
 		if err != nil {
 			logger("artistsdb/GetAllArtists", err)
 		}
@@ -48,7 +46,7 @@ func GetAllArtists(db *sql.DB) []Artist {
 		artists = append(artists, a)
 	}
 
-	return artists
+	return
 }
 
 func UpdateLastTrack(db *sql.DB, SUIs []spotify.ID) {
@@ -94,7 +92,9 @@ func RemoveArtist(db *sql.DB, a Artist) {
 
 }
 
-func artistExists(db *sql.DB, SUI spotify.ID) bool {
+func artistExists(db *sql.DB, SUI spotify.ID) (exists bool) {
+	exists = true
+
 	stmt, err := db.Prepare("SELECT count(*) FROM Artists WHERE SUI = ?")
 	if err != nil {
 		logger("artistsdb/artistExists", err)
@@ -108,8 +108,8 @@ func artistExists(db *sql.DB, SUI spotify.ID) bool {
 	}
 
 	if count == 0 {
-		return false
+		exists = false
 	}
 
-	return true
+	return
 }

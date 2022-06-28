@@ -71,8 +71,8 @@ func (p *Playlist) Playlister() {
 		p.weeklyUpdater(ctx)
 
 		fmt.Println("[NU] Initiating Release Crawler")
-		for _, artist := range artists {
-			trackIDs, trackArtists := p.getNewestTracks(ctx, artist)
+		for _, a := range artists {
+			trackIDs, trackArtists := p.getNewestTracks(ctx, a)
 
 			if len(trackIDs) > 0 {
 				_, err := spo.AddTracksToPlaylist(ctx, p.ID, trackIDs...)
@@ -81,10 +81,10 @@ func (p *Playlist) Playlister() {
 				}
 
 				UpdateLastTrack(artistsDB, trackArtists)
-				fmt.Printf("%v | Updated %v tracks\n", artist.Name, len(trackIDs))
+				fmt.Printf("%v | Updated %v tracks\n", a.Name, len(trackIDs))
 				artistsUpdated += 1
 			} else {
-				fmt.Println(artist.Name)
+				fmt.Println(a.Name)
 			}
 			// time.Sleep(time.Second / 3)
 		}
@@ -95,14 +95,11 @@ func (p *Playlist) Playlister() {
 	}
 }
 
-func (p *Playlist) getNewestTracks(ctx context.Context, a Artist) ([]spotify.ID, []spotify.ID) {
-	newTracks := []spotify.ID{}
-	artists := []spotify.ID{}
-
+func (p *Playlist) getNewestTracks(ctx context.Context, a Artist) (newTracks, artists []spotify.ID) {
 	albums, err := p.Client.GetArtistAlbums(ctx, spotify.ID(a.SUI), []spotify.AlbumType{1, 2})
 	if err != nil {
 		logger("Playlist/GetNewestTracks", err)
-		return newTracks, artists
+		return
 	} else {
 		albumCounter := 0
 		for _, album := range albums.Albums {
@@ -142,7 +139,7 @@ func (p *Playlist) getNewestTracks(ctx context.Context, a Artist) ([]spotify.ID,
 			}
 		}
 
-		return newTracks, artists
+		return
 	}
 }
 
@@ -199,34 +196,34 @@ func (p *Playlist) updatePlaylist(ctx context.Context, uid string) {
 	}
 }
 
-func isAdded(tracks []spotify.PlaylistTrack, id spotify.ID, name string) bool {
+func isAdded(tracks []spotify.PlaylistTrack, id spotify.ID, name string) (added bool) {
 	for i := 0; i < len(tracks); i++ {
 		t := tracks[i].Track
 		// Work around for still adding track released today without refreshing playlist for weeklyUpdater
 		if t.ID == id || t.Name == name && t.Album.ReleaseDateTime().Before(time.Now().Truncate(time.Hour*24).Add(-time.Minute*30)) {
-			return true
+			added = true
 		}
 	}
 
-	return false
+	return
 }
 
-func isNew(tDate time.Time, lDate time.Time) bool {
+func isNew(tDate, lDate time.Time) (elapsed bool) {
 	lElapsed := time.Now().Truncate(time.Hour * 24).Add(-(time.Minute * 30))
 
 	if tDate.After(lElapsed) {
-		return true
+		elapsed = true
 	}
 
-	return false
+	return
 }
 
-func isExtended(t string) bool {
+func isExtended(t string) (extended bool) {
 	if strings.Contains(t, "Extended") || strings.Contains(t, "extended") {
-		return true
+		extended = true
 	}
 
-	return false
+	return
 }
 
 func newAuth(redirectURL string) *spotifyauth.Authenticator {
