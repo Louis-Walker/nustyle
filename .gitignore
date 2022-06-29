@@ -3,5 +3,5 @@
 *.dll
 *.so
 *.dylib
-.artistdb/
+artistdb/
 Procfile
