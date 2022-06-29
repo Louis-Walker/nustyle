@@ -15,14 +15,12 @@ import (
 )
 
 type Playlist struct {
-	ID          spotify.ID
-	auth        *spotifyauth.Authenticator
-	Client      *spotify.Client
-	ch          chan *spotify.Client
-	state       string
-	redirectURL string
-	url         string
-	Tracks      []spotify.PlaylistTrack
+	ID                      spotify.ID
+	auth                    *spotifyauth.Authenticator
+	Client                  *spotify.Client
+	ch                      chan *spotify.Client
+	Tracks                  []spotify.PlaylistTrack
+	state, redirectURL, url string
 }
 
 func NewPlaylist(redirectURL string, id spotify.ID) (*Playlist, error) {
@@ -164,7 +162,7 @@ func (p *Playlist) updatePlaylist(ctx context.Context, uid string) {
 	_, nowMonth, nowDay := time.Now().Date()
 	newName := fmt.Sprintf("Nustyle %v/%v", nowDay, int(nowMonth))
 
-	err = spo.ChangePlaylistName(ctx, pid, newName)
+	err = spo.ChangePlaylistName(ctx, pID, newName)
 	if err != nil {
 		logger("Playlist/UpdatePlaylist", err)
 	}
@@ -177,7 +175,7 @@ func (p *Playlist) updatePlaylist(ctx context.Context, uid string) {
 	}
 
 	var tracks *spotify.PlaylistItemPage
-	tracks, err = spo.GetPlaylistItems(ctx, pid)
+	tracks, err = spo.GetPlaylistItems(ctx, pID)
 	if err != nil {
 		logger("Playlist/UpdatePlaylist", err)
 	}
@@ -190,7 +188,7 @@ func (p *Playlist) updatePlaylist(ctx context.Context, uid string) {
 	p.Client.AddTracksToPlaylist(ctx, fp.ID, trackIDs...)
 
 	//CLEAN MAIN PLAYLIST
-	_, err = p.Client.RemoveTracksFromPlaylist(ctx, pid, trackIDs...)
+	_, err = p.Client.RemoveTracksFromPlaylist(ctx, pID, trackIDs...)
 	if err != nil {
 		logger("Playlist/UpdatePlaylist", err)
 	}

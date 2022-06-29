@@ -1,2 +1,7 @@
 *.exe
-/artistdb
+*.exe~
+*.dll
+*.so
+*.dylib
+.artistdb/
+Procfile

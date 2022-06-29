@@ -12,30 +12,34 @@ import (
 	"github.com/zmb3/spotify/v2"
 )
 
+const (
+	userID       = "m05hi"
+	localHostURL = "http://localhost:8080"
+)
+
 var (
-	pathToDB, redirectURL, userID string
-	playlist                      *Playlist
-	artistsDB                     *sql.DB
-	pid                           spotify.ID
-	err                           error
+	pathToDB, redirectURL string
+	playlist              *Playlist
+	artistsDB             *sql.DB
+	pID                   spotify.ID
+	err                   error
 )
 
 func main() {
 	pathToDB = os.Getenv("PATH_TO_DB")
 	redirectURL = os.Getenv("REDIRECT_URL")
-	pid = spotify.ID(os.Getenv("PLAYLIST_ID"))
-	userID = "m05hi"
+	pID = spotify.ID(os.Getenv("PLAYLIST_ID"))
 
 	go server()
 
 	if !(isProd()) {
-		cmd := exec.Command("cmd", "/c", "start", "http://localhost:8080")
+		cmd := exec.Command("cmd", "/c", "start", localHostURL)
 		cmd.Start()
 	}
 
 	// Connections
 	artistsDB = OpenArtistDB(pathToDB)
-	playlist, err = NewPlaylist(redirectURL, pid)
+	playlist, err = NewPlaylist(redirectURL, pID)
 	if err != nil {
 		logger("main/main", err)
 	}
