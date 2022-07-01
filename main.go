@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -13,39 +14,76 @@ import (
 )
 
 const (
-	userID       = "m05hi"
-	localHostURL = "http://localhost:8080"
+	userID   = "m05hi"
+	localURL = "http://localhost:8080"
 )
 
 var (
 	pathToDB, redirectURL string
+	auth                  *Auth
 	playlist              *Playlist
 	artistsDB             *sql.DB
-	pID                   spotify.ID
+	playlistID            spotify.ID
 	err                   error
 )
 
 func main() {
 	pathToDB = os.Getenv("PATH_TO_DB")
 	redirectURL = os.Getenv("REDIRECT_URL")
-	pID = spotify.ID(os.Getenv("PLAYLIST_ID"))
-
-	go server()
-
-	if !(isProd()) {
-		cmd := exec.Command("cmd", "/c", "start", localHostURL)
-		cmd.Start()
-	}
+	playlistID = spotify.ID(os.Getenv("PLAYLIST_ID"))
 
 	// Connections
+	auth = NewAuth(redirectURL)
 	artistsDB = OpenArtistDB(pathToDB)
-	playlist, err = NewPlaylist(redirectURL, pID)
+	playlist, err = NewPlaylist(playlistID)
 	if err != nil {
 		logger("main/main", err)
 	}
 
-	// Main playlist crawler
-	go playlist.Playlister()
+	// Routes
+	http.HandleFunc("/", handleRoot)
+	http.HandleFunc("/auth", func(w http.ResponseWriter, r *http.Request) {
+		handleAuth(w, r, auth.URL)
+	})
+	http.HandleFunc("/auth/callback", func(w http.ResponseWriter, r *http.Request) {
+		completeAuth(w, r, auth)
+	})
+	http.HandleFunc("/artist/add", addArtist)
+	http.HandleFunc("/artist/remove", removeArtist)
+
+	go func() {
+		port := os.Getenv("PORT")
+		if port == "" {
+			log.Fatalf("No PORT specified!")
+		}
+
+		fmt.Println("Listening on port: " + port)
+		err := http.ListenAndServe(fmt.Sprintf(":%v", port), nil)
+		if err != nil {
+			logger("main/server", err)
+		}
+	}()
+
+	// Spotify Authentication
+	ctx := context.Background()
+	client := <-auth.ch
+
+	user, err := client.CurrentUser(ctx)
+	if err != nil {
+		logger("main/server", err)
+	}
+
+	fmt.Println("You are logged in as:", user.ID)
+	defer ctx.Done()
+
+	// Semi-hourly crawler for releases
+	go playlist.Playlister(client)
+
+	// Local laziness
+	if !(isProd()) {
+		cmd := exec.Command("cmd", "/c", "start", localURL)
+		cmd.Start()
+	}
 
 	exit := make(chan string)
 	for {
@@ -53,23 +91,6 @@ func main() {
 		case <-exit:
 			os.Exit(0)
 		}
-	}
-}
-
-func server() {
-	http.HandleFunc("/", handleRoot)
-	http.HandleFunc("/artist/add", addArtist)
-	http.HandleFunc("/artist/remove", removeArtist)
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		log.Fatalf("No PORT specified!")
-	}
-
-	fmt.Println("Listening on port: " + port)
-	err := http.ListenAndServe(fmt.Sprintf(":%v", port), nil)
-	if err != nil {
-		logger("main/server", err)
 	}
 }
 
