@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -16,11 +17,13 @@ import (
 const (
 	userID   = "m05hi"
 	localURL = "http://localhost:8080"
+	viewPath = "web/views/"
 )
 
 var (
 	pathToDB, redirectURL, username, password string
 	auth                                      *AuthSpotify
+	client                                    *spotify.Client
 	playlist                                  *Playlist
 	artistsDB                                 *sql.DB
 	playlistID                                spotify.ID
@@ -51,8 +54,14 @@ func main() {
 	http.HandleFunc("/auth/spotify/callback", func(w http.ResponseWriter, r *http.Request) {
 		completeAuthSpotify(w, r, auth)
 	})
-	http.HandleFunc("/artist/add", addArtist)
-	http.HandleFunc("/artist/remove", removeArtist)
+	http.HandleFunc("/artist/add", addArtistBySUI)
+	http.HandleFunc("/artist/remove", removeArtistBySUI)
+
+	// Handle web resources
+	cssFS := http.FileServer(http.Dir("./web/css"))
+	http.Handle("/css/", http.StripPrefix("/css", cssFS))
+	jsFS := http.FileServer(http.Dir("./web/js"))
+	http.Handle("/js/", http.StripPrefix("/js", jsFS))
 
 	go func() {
 		port := os.Getenv("PORT")
@@ -67,9 +76,15 @@ func main() {
 		}
 	}()
 
+	// Local laziness
+	if !(isProd()) {
+		cmd := exec.Command("cmd", "/c", "start", localURL)
+		cmd.Start()
+	}
+
 	// Spotify Authentication
 	ctx := context.Background()
-	client := <-auth.ch
+	client = <-auth.ch
 
 	user, err := client.CurrentUser(ctx)
 	if err != nil {
@@ -80,13 +95,7 @@ func main() {
 	defer ctx.Done()
 
 	// Semi-hourly crawler for releases
-	go playlist.Playlister(client)
-
-	// Local laziness
-	if !(isProd()) {
-		cmd := exec.Command("cmd", "/c", "start", localURL)
-		cmd.Start()
-	}
+	//go playlist.Playlister(client)
 
 	exit := make(chan string)
 	for {
@@ -98,23 +107,48 @@ func main() {
 }
 
 func handleRoot(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "<p>Sign into <a href='auth/spotify'>Spotify</a></p>")
+	fmt.Fprintf(w, "<p>Sign into <a href='auth/spotify'>Spotify</a></p> \n <a href='dashboard'>Dashboard</a>")
+}
+
+type DashboardData struct {
+	PageTitle string
+	Artists   []Artist
 }
 
 func handleDashboard(w http.ResponseWriter, r *http.Request) {
-
+	tmpl := template.Must(template.ParseFiles(viewPath + "dashboard.html"))
+	data := DashboardData{
+		PageTitle: "Dashboard",
+		Artists:   GetAllArtists(artistsDB),
+	}
+	tmpl.Execute(w, data)
 }
 
-func addArtist(w http.ResponseWriter, r *http.Request) {
-	name := r.URL.Query().Get("name")
+func addArtistBySUI(w http.ResponseWriter, r *http.Request) {
 	SUI := spotify.ID(r.URL.Query().Get("sui"))
-	AddArtist(artistsDB, Artist{name, SUI, time.Now()})
+	a, err := client.GetArtist(context.Background(), SUI)
+	if err != nil {
+		logger("main/addArtistBySUI", err)
+		http.Error(w, "Not a valid URI", http.StatusNotFound)
+	} else {
+		name := a.Name
+		nowString := time.Now().Format("2006-01-02 15:04:05+00:00")
+		now, _ := time.Parse("2006-01-02 15:04:05+00:00", nowString)
+
+		err = AddArtist(artistsDB, Artist{name, SUI, now})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			fmt.Println(err.Error())
+		}
+	}
 }
 
-func removeArtist(w http.ResponseWriter, r *http.Request) {
-	name := r.URL.Query().Get("name")
+func removeArtistBySUI(w http.ResponseWriter, r *http.Request) {
 	SUI := spotify.ID(r.URL.Query().Get("sui"))
-	RemoveArtist(artistsDB, Artist{name, SUI, time.Now()})
+	err := RemoveArtist(artistsDB, SUI)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func isProd() bool {

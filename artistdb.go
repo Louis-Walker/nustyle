@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -65,7 +66,7 @@ func UpdateLastTrack(db *sql.DB, SUIs []spotify.ID) {
 	}
 }
 
-func AddArtist(db *sql.DB, a Artist) {
+func AddArtist(db *sql.DB, a Artist) error {
 	if !artistExists(db, a.SUI) {
 		stmt, err := db.Prepare("INSERT INTO Artists(Name, SUI, LastTrackDateTime) VALUES (?, ?, ?)")
 		if err != nil {
@@ -76,20 +77,29 @@ func AddArtist(db *sql.DB, a Artist) {
 		if err != nil {
 			logger("artistsdb/AddArtist", err)
 		}
+	} else {
+		err = errors.New("Already exists")
 	}
+
+	return err
 }
 
-func RemoveArtist(db *sql.DB, a Artist) {
-	stmt, err := db.Prepare("DELETE FROM Artists WHERE SUI = ?")
-	if err != nil {
-		logger("artistsdb/RemoveArtist", err)
+func RemoveArtist(db *sql.DB, SUI spotify.ID) error {
+	if !artistExists(db, SUI) {
+		stmt, err := db.Prepare("DELETE FROM Artists WHERE SUI = ?")
+		if err != nil {
+			logger("artistsdb/RemoveArtist", err)
+		}
+
+		_, err = stmt.Exec(SUI)
+		if err != nil {
+			logger("artistsdb/RemoveArtist", err)
+		}
+	} else {
+		err = errors.New("Doesn't exist")
 	}
 
-	_, err = stmt.Exec(a.SUI)
-	if err != nil {
-		logger("artistsdb/RemoveArtist", err)
-	}
-
+	return err
 }
 
 func artistExists(db *sql.DB, SUI spotify.ID) (exists bool) {

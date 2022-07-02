@@ -1,0 +1,43 @@
+body {
+    margin-top: 5vh;
+    padding-left: 10vw;
+    background-color: #121212;
+    color: white;
+}
+
+.artist-card {
+    max-width: 650px;
+    min-width: 550px;
+    margin-left: 10vw;
+}
+
+.artist-card div input {
+    color: black !important;
+}
+
+.artist-card div input[type=button] {
+    margin-left: 3%;
+}
+
+.artist-card ul {
+    width: 100%;
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    flex-flow: column nowrap;
+}
+
+.artist-card ul li {
+    width: 90%;
+    height: 20px;
+    margin-bottom: 1px;
+}
+
+.artist-card ul a {
+    display: inline-block;
+}
+
+.artist-card ul p {
+    display: inline-block;
+}
