@@ -19,21 +19,23 @@ const (
 )
 
 var (
-	pathToDB, redirectURL string
-	auth                  *Auth
-	playlist              *Playlist
-	artistsDB             *sql.DB
-	playlistID            spotify.ID
-	err                   error
+	pathToDB, redirectURL, username, password string
+	auth                                      *AuthSpotify
+	playlist                                  *Playlist
+	artistsDB                                 *sql.DB
+	playlistID                                spotify.ID
+	err                                       error
 )
 
 func main() {
 	pathToDB = os.Getenv("PATH_TO_DB")
 	redirectURL = os.Getenv("REDIRECT_URL")
 	playlistID = spotify.ID(os.Getenv("PLAYLIST_ID"))
+	username = os.Getenv("NU_USERNAME")
+	password = os.Getenv("NU_PASSWORD")
 
 	// Connections
-	auth = NewAuth(redirectURL)
+	auth = NewAuthSpotify(redirectURL)
 	artistsDB = OpenArtistDB(pathToDB)
 	playlist, err = NewPlaylist(playlistID)
 	if err != nil {
@@ -42,11 +44,12 @@ func main() {
 
 	// Routes
 	http.HandleFunc("/", handleRoot)
-	http.HandleFunc("/auth", func(w http.ResponseWriter, r *http.Request) {
-		handleAuth(w, r, auth.URL)
+	http.HandleFunc("/dashboard", basicAuth(handleDashboard))
+	http.HandleFunc("/auth/spotify", func(w http.ResponseWriter, r *http.Request) {
+		handleAuthSpotify(w, r, auth.URL)
 	})
-	http.HandleFunc("/auth/callback", func(w http.ResponseWriter, r *http.Request) {
-		completeAuth(w, r, auth)
+	http.HandleFunc("/auth/spotify/callback", func(w http.ResponseWriter, r *http.Request) {
+		completeAuthSpotify(w, r, auth)
 	})
 	http.HandleFunc("/artist/add", addArtist)
 	http.HandleFunc("/artist/remove", removeArtist)
@@ -95,7 +98,11 @@ func main() {
 }
 
 func handleRoot(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "<p>Sign into <a href='auth'>Spotify</a></p>")
+	fmt.Fprintf(w, "<p>Sign into <a href='auth/spotify'>Spotify</a></p>")
+}
+
+func handleDashboard(w http.ResponseWriter, r *http.Request) {
+
 }
 
 func addArtist(w http.ResponseWriter, r *http.Request) {

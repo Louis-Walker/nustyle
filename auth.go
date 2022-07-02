@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"crypto/subtle"
 	"fmt"
 	"log"
 	"math/rand"
@@ -13,14 +15,14 @@ import (
 	spotifyauth "github.com/zmb3/spotify/v2/auth"
 )
 
-type Auth struct {
+type AuthSpotify struct {
 	client *spotifyauth.Authenticator
 	state  string
 	ch     chan *spotify.Client
 	URL    string
 }
 
-func NewAuth(redirectURL string) *Auth {
+func NewAuthSpotify(redirectURL string) *AuthSpotify {
 	c := spotifyauth.New(
 		spotifyauth.WithRedirectURL(redirectURL),
 		spotifyauth.WithScopes(
@@ -32,7 +34,7 @@ func NewAuth(redirectURL string) *Auth {
 		spotifyauth.WithClientSecret(os.Getenv("SPOTIFY_SECRET")),
 	)
 
-	a := &Auth{
+	a := &AuthSpotify{
 		client: c,
 		state:  fmt.Sprint(time.Now().Unix() * rand.Int63()),
 		ch:     make(chan *spotify.Client),
@@ -42,11 +44,11 @@ func NewAuth(redirectURL string) *Auth {
 	return a
 }
 
-func handleAuth(w http.ResponseWriter, r *http.Request, authURL string) {
+func handleAuthSpotify(w http.ResponseWriter, r *http.Request, authURL string) {
 	http.Redirect(w, r, authURL, http.StatusFound)
 }
 
-func completeAuth(w http.ResponseWriter, r *http.Request, auth *Auth) {
+func completeAuthSpotify(w http.ResponseWriter, r *http.Request, auth *AuthSpotify) {
 	ctx := context.Background()
 
 	tok, err := auth.client.Token(ctx, auth.state, r)
@@ -63,4 +65,27 @@ func completeAuth(w http.ResponseWriter, r *http.Request, auth *Auth) {
 	client := spotify.New(auth.client.Client(ctx, tok), spotify.WithRetry(true))
 	fmt.Fprintf(w, "Login Completed!")
 	auth.ch <- client
+}
+
+func basicAuth(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		username, password, ok := r.BasicAuth()
+		if ok {
+			usernameHash := sha256.Sum256([]byte(username))
+			passwordHash := sha256.Sum256([]byte(password))
+			expectedUsernameHash := sha256.Sum256([]byte(username))
+			expectedPasswordHash := sha256.Sum256([]byte(password))
+
+			usernameMatch := (subtle.ConstantTimeCompare(usernameHash[:], expectedUsernameHash[:]) == 1)
+			passwordMatch := (subtle.ConstantTimeCompare(passwordHash[:], expectedPasswordHash[:]) == 1)
+
+			if usernameMatch && passwordMatch {
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
+
+		w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	})
 }
