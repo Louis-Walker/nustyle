@@ -37,6 +37,11 @@ header {
     border-color: #A63542;
 }
 
+.artist-card div input[type=button]:focus {
+    background-color: #A63542;
+    border-color: #A63542;
+}
+
 .artist-card ul {
     width: 100%;
     display: flex;

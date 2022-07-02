@@ -9,7 +9,9 @@ addBTN.addEventListener("click", function(e) {
     } else {
         addArtist(s)
         .then(status => {
-            console.log(status ? "ADDED" : "FAILED");
+            if (status != 200) {
+                window.alert("Was not able to add artist");
+            };
         });
     }
 });
@@ -21,7 +23,9 @@ removeBTN.addEventListener("click", function(e) {
     } else {
         removeArtist(s)
         .then(status => {
-            console.log(status ? "REMOVED" : "FAILED");
+            if (status != 200) {
+                window.alert("Was not able to remove artist");
+            };
         });
     }
 });
