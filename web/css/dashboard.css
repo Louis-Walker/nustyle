@@ -1,8 +1,15 @@
 body {
-    margin-top: 5vh;
     padding-left: 10vw;
     background-color: #121212;
     color: white;
+}
+
+header {
+    margin: 5vh 0;
+}
+
+.nu-red {
+    color: #f54f62;
 }
 
 .artist-card {
@@ -11,12 +18,23 @@ body {
     margin-left: 10vw;
 }
 
+.artist-card div {
+    width: 100%;
+}
+
 .artist-card div input {
     color: black !important;
 }
 
 .artist-card div input[type=button] {
     margin-left: 3%;
+    background-color: #f54f62;
+    border-color: #f54f62;
+}
+
+.artist-card div input[type=button]:hover {
+    background-color: #A63542;
+    border-color: #A63542;
 }
 
 .artist-card ul {
@@ -29,15 +47,25 @@ body {
 }
 
 .artist-card ul li {
-    width: 90%;
-    height: 20px;
-    margin-bottom: 1px;
+    width: 100% - 2vw;
+    margin: 1px;
+    padding: 2px 1vw;
+    background-color: #181818;
+    border-radius: 4px;
 }
 
 .artist-card ul a {
     display: inline-block;
+    color: white;
+    text-decoration: none;
+}
+
+.artist-card ul a:hover {
+    color: #f54f62;
 }
 
 .artist-card ul p {
     display: inline-block;
+    margin: 0;
+    opacity: 65%;
 }
