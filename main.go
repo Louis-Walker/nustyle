@@ -107,7 +107,7 @@ func main() {
 }
 
 func handleRoot(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "<p>Sign into <a href='auth/spotify'>Spotify</a></p> \n <a href='dashboard'>Dashboard</a>")
+	fmt.Fprintf(w, "<p>Sign into <a href='auth/spotify'>Spotify</a></p>")
 }
 
 type DashboardData struct {
