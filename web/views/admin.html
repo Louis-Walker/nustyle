@@ -7,7 +7,7 @@
             <input class="six columns u-pull-right" id="SUI" type="text" placeholder="Artist's Spotify URI">
         </div>
 
-        <ul>
+        <ul id="artistList">
             {{range .Artists}}
             <li data-sui="{{.SUI}}">
                 <a class="six columns" href="https://open.spotify.com/artist/{{.SUI}}">{{.Name}}</a>

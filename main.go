@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
@@ -169,6 +170,17 @@ func addArtistBySUI(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			fmt.Println(err.Error())
 		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+		res := make(map[string]string)
+		res["status"] = "200"
+		res["name"] = name
+		jsonRes, err := json.Marshal(res)
+		if err != nil {
+			logger("main/addArtistBySUI", err)
+		}
+		w.Write(jsonRes)
 	}
 }
 
