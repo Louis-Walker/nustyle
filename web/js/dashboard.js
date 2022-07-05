@@ -21,7 +21,7 @@ addBTN.addEventListener("click", (e) => {
                 window.alert("Was not able to add artist");
             } else if (data.status == 200) {
                 artistListAdd(new Artist(data.name, s));
-            };
+            }
         });
     }
 });
@@ -43,7 +43,7 @@ function removeBTNListener(e) {
             } else if (status == 200) {
                 document.querySelector('[data-sui="'+sui+'"]').remove();
                 document.getElementById("totalArtists").innerHTML -= 1;
-            };
+            }
         });
     }
 }
