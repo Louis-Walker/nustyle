@@ -20,7 +20,7 @@ h4 span {
     display: inline-block;
     height: 38px;
     padding: 0 30px;
-    color: white;
+    color: black;
     text-align: center;
     font-size: 11px;
     font-weight: 600;
@@ -39,6 +39,7 @@ h4 span {
 .link-button:hover {
     background-color: #A63542;
     border-color: #A63542;
+    color: black;
 }
 
 #totalArtists::before {

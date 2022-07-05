@@ -22,21 +22,21 @@ const (
 )
 
 var (
-	pathToDB, redirectURL, username, password string
-	authSpo                                   *AuthSpotify
-	client                                    *spotify.Client
-	playlist                                  *Playlist
-	artistsDB                                 *sql.DB
-	playlistID                                spotify.ID
-	err                                       error
+	pathToDB, redirectURL, expectedUsername, expectedPassword string
+	authSpo                                                   *AuthSpotify
+	client                                                    *spotify.Client
+	playlist                                                  *Playlist
+	artistsDB                                                 *sql.DB
+	playlistID                                                spotify.ID
+	err                                                       error
 )
 
 func main() {
 	pathToDB = os.Getenv("PATH_TO_DB")
 	redirectURL = os.Getenv("REDIRECT_URL")
 	playlistID = spotify.ID(os.Getenv("PLAYLIST_ID"))
-	username = os.Getenv("NU_USERNAME")
-	password = os.Getenv("NU_PASSWORD")
+	expectedUsername = os.Getenv("NU_USERNAME")
+	expectedPassword = os.Getenv("NU_PASSWORD")
 
 	// Connections
 	authSpo = NewAuthSpotify(redirectURL)
@@ -47,7 +47,7 @@ func main() {
 	}
 
 	// Routes
-	http.HandleFunc("/", handleRoot)
+	http.HandleFunc("/", basicAuth(handleRoot))
 	http.HandleFunc("/admin", basicAuth(handleAdmin))
 	http.HandleFunc("/auth/spotify", func(w http.ResponseWriter, r *http.Request) {
 		handleAuthSpotify(w, r, authSpo.URL)
@@ -55,8 +55,8 @@ func main() {
 	http.HandleFunc("/auth/spotify/callback", func(w http.ResponseWriter, r *http.Request) {
 		completeAuthSpotify(w, r, authSpo)
 	})
-	http.HandleFunc("/artist/add", addArtistBySUI)
-	http.HandleFunc("/artist/remove", removeArtistBySUI)
+	http.HandleFunc("/api/artist/add", basicAuth(addArtistBySUI))
+	http.HandleFunc("/api/artist/remove", basicAuth(removeArtistBySUI))
 
 	// Handle web resources
 	cssFS := http.FileServer(http.Dir("./web/css"))

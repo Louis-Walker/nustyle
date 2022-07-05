@@ -1,4 +1,4 @@
-const artistURL = "http://localhost:8080/artist/";
+const artistURL = "http://localhost:8080/api/artist/";
 const addBTN = document.getElementById("addBTN");
 const removeBTNs = document.getElementsByClassName("removeBTN");
 
@@ -48,22 +48,6 @@ function removeBTNListener(e) {
     }
 }
 
-// API Calls
-async function addArtist(sui) {
-    const url = artistURL + "add?sui=" + sui;
-    const res = await fetch(url);
-
-    return res;
-}
-
-async function removeArtist(sui) {
-    const url = artistURL + "remove?sui=" + sui;
-    const res = await fetch(url);
-
-    return res.status;
-}
-// END
-
 function artistListAdd(artist) {
     let listEle = document.getElementById("artistList");
     let artistEle = document.createElement("li");
@@ -88,6 +72,22 @@ function artistListAdd(artist) {
     artistEle.appendChild(p);
     artistEle.appendChild(b);
     listEle.appendChild(artistEle);
+}
+
+
+// API Calls
+async function addArtist(sui) {
+    const url = artistURL + "add?sui=" + sui;
+    const res = await fetch(url);
+
+    return res;
+}
+
+async function removeArtist(sui) {
+    const url = artistURL + "remove?sui=" + sui;
+    const res = await fetch(url);
+
+    return res.status;
 }
 
 // Helper Functions
