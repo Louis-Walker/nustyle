@@ -85,7 +85,7 @@ func AddArtist(db *sql.DB, a Artist) error {
 }
 
 func RemoveArtist(db *sql.DB, SUI spotify.ID) error {
-	if !artistExists(db, SUI) {
+	if artistExists(db, SUI) {
 		stmt, err := db.Prepare("DELETE FROM Artists WHERE SUI = ?")
 		if err != nil {
 			logger("artistsdb/RemoveArtist", err)

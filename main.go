@@ -129,8 +129,9 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 
 func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	type AdminData struct {
-		PageTitle string
-		Artists   []Artist
+		PageTitle    string
+		Artists      []Artist
+		TotalArtists int
 	}
 
 	tmpl, err := template.ParseFiles(layoutPaths("admin")...)
@@ -139,9 +140,11 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error", 500)
 	}
 
+	a := GetAllArtists(artistsDB)
 	err = tmpl.Execute(w, AdminData{
-		PageTitle: "Dashboard",
-		Artists:   GetAllArtists(artistsDB),
+		PageTitle:    "Dashboard",
+		Artists:      a,
+		TotalArtists: len(a),
 	})
 	if err != nil {
 		logger("main/handleAdmin", err)
@@ -173,6 +176,7 @@ func removeArtistBySUI(w http.ResponseWriter, r *http.Request) {
 	SUI := spotify.ID(r.URL.Query().Get("sui"))
 	err := RemoveArtist(artistsDB, SUI)
 	if err != nil {
+		logger("main/removeArtistBySUI", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

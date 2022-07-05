@@ -1,9 +1,9 @@
 const artistURL = "http://localhost:8080/artist/";
 const addBTN = document.getElementById("addBTN");
-const removeBTN = document.getElementById("removeBTN");
+const removeBTNs = document.getElementsByClassName("removeBTN");
 
 addBTN.addEventListener("click", function(e) {
-    let s = getSUI();
+    let s = document.getElementById("SUI").value;
     if (s.length == 0) {
         window.alert("Please enter an artist's Spotify URI");
     } else {
@@ -16,19 +16,25 @@ addBTN.addEventListener("click", function(e) {
     }
 });
 
-removeBTN.addEventListener("click", function(e) {
-    let s = getSUI();
-    if (s.length == 0) {
-        window.alert("Please enter an artist's Spotify URI");
-    } else {
-        removeArtist(s)
-        .then(status => {
-            if (status != 200) {
-                window.alert("Was not able to remove artist");
-            };
-        });
-    }
-});
+for (let i = 0; removeBTNs.length > i; i++) {
+    removeBTNs[i].addEventListener("click", function(e) {
+        let btn = e.target;
+        let sui = btn.parentNode.dataset.sui;
+        if (s.length == 0) {
+            window.alert("Please enter an artist's Spotify URI");
+        } else {
+            removeArtist(sui)
+            .then(status => {
+                if (status != 200) {
+                    window.alert("Was not able to remove artist");
+                } else {
+                    document.querySelector('[data-sui="'+sui+'"]').remove();
+                    document.getElementById("totalArtists").innerHTML -= 1;
+                };
+            });
+        }
+    });
+}
 
 async function addArtist(sui) {
     const url = artistURL + "add?sui=" + sui;
@@ -42,8 +48,4 @@ async function removeArtist(sui) {
     const res = await fetch(url);
 
     return res.status;
-}
-
-function getSUI() {
-    return document.getElementById("SUI").value;
 }

@@ -8,9 +8,22 @@ header {
     margin: 5vh 0;
 }
 
+h4 span {
+    font-size: 14px;
+}
+
 .red {
     color: #f54f62;
 }
+
+#totalArtists::before {
+    content: "(";
+}
+
+#totalArtists::after {
+    content: ")";
+}
+
 
 .artist-card {
     max-width: 650px;
@@ -61,6 +74,30 @@ header {
     display: inline-block;
     margin: 0;
     opacity: 65%;
+}
+
+.artist-card ul input[type="button"] {
+    width: 18px;
+    height: 18px;
+    margin: 4px 0 0 0;
+    padding: 0;
+    background-color: #181818;
+    border-color: #181818;
+    line-height: 18px;
+    text-align: center;
+    color: #f54f62;
+}
+
+.artist-card ul input[type="button"]:hover {
+    width: 18px;
+    height: 18px;
+    margin: 4px 0 0 0;
+    padding: 0;
+    background-color: #f54f62;
+    border-color: #f54f62;
+    line-height: 18px;
+    text-align: center;
+    color: #181818;
 }
 
 /*Skeleton Overwrites*/
