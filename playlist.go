@@ -119,8 +119,8 @@ func (p *Playlist) weeklyUpdater(ctx context.Context, spo *spotify.Client) {
 		oldName := playlist.Name
 
 		// CHANGE NAME
-		_, nowMonth, nowDay := time.Now().Date()
-		newName := fmt.Sprintf("Nustyle %v/%v", nowDay, int(nowMonth))
+		nowYear, nowMonth, nowDay := time.Now().Date()
+		newName := fmt.Sprintf("Nustyle %v/%v/%v", nowDay, int(nowMonth), fmt.Sprint(nowYear)[2:4])
 
 		err = spo.ChangePlaylistName(ctx, playlistID, newName)
 		if err != nil {

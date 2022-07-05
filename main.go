@@ -180,6 +180,7 @@ func addArtistBySUI(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			logger("main/addArtistBySUI", err)
 		}
+
 		w.Write(jsonRes)
 	}
 }
