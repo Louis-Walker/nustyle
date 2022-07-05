@@ -1,0 +1,24 @@
+{{template "header" .}}
+<div class="row">
+    <div class="six columns artist-card">
+        <h4>Artists</h4>
+
+        <div class="row">
+            <input class="seven columns u-pull-left" id="SUI" type="text" placeholder="Artist's Spotify URI">
+            <input class="button-primary u-pull-right" id="removeBTN" type="button" value="Remove">
+            <input class="button-primary u-pull-right" id="addBTN" type="button" value="Add">
+        </div>
+
+        <ul>
+            {{range .Artists}}
+            <li>
+                <a class="six columns" href="https://open.spotify.com/artist/{{.SUI}}">{{.Name}}</a>
+                <p class="six columns">{{.SUI}}</p>
+            </li>
+            {{end}}
+        </ul>
+    </div>
+
+    <div class="six columns"></div>
+</div>
+{{template "footer"}}

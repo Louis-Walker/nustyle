@@ -15,14 +15,14 @@ import (
 )
 
 const (
-	userID   = "m05hi"
-	localURL = "http://localhost:8080"
-	viewPath = "web/views/"
+	userID    = "m05hi"
+	localURL  = "http://localhost:8080"
+	viewsPath = "web/views/"
 )
 
 var (
 	pathToDB, redirectURL, username, password string
-	auth                                      *AuthSpotify
+	authSpo                                   *AuthSpotify
 	client                                    *spotify.Client
 	playlist                                  *Playlist
 	artistsDB                                 *sql.DB
@@ -38,7 +38,7 @@ func main() {
 	password = os.Getenv("NU_PASSWORD")
 
 	// Connections
-	auth = NewAuthSpotify(redirectURL)
+	authSpo = NewAuthSpotify(redirectURL)
 	artistsDB = OpenArtistDB(pathToDB)
 	playlist, err = NewPlaylist(playlistID)
 	if err != nil {
@@ -47,12 +47,12 @@ func main() {
 
 	// Routes
 	http.HandleFunc("/", handleRoot)
-	http.HandleFunc("/dashboard", basicAuth(handleDashboard))
+	http.HandleFunc("/admin", basicAuth(handleAdmin))
 	http.HandleFunc("/auth/spotify", func(w http.ResponseWriter, r *http.Request) {
-		handleAuthSpotify(w, r, auth.URL)
+		handleAuthSpotify(w, r, authSpo.URL)
 	})
 	http.HandleFunc("/auth/spotify/callback", func(w http.ResponseWriter, r *http.Request) {
-		completeAuthSpotify(w, r, auth)
+		completeAuthSpotify(w, r, authSpo)
 	})
 	http.HandleFunc("/artist/add", addArtistBySUI)
 	http.HandleFunc("/artist/remove", removeArtistBySUI)
@@ -84,7 +84,7 @@ func main() {
 
 	// Spotify Authentication
 	ctx := context.Background()
-	client = <-auth.ch
+	client = <-authSpo.ch
 
 	user, err := client.CurrentUser(ctx)
 	if err != nil {
@@ -106,24 +106,50 @@ func main() {
 	}
 }
 
+// View Controllers
 func handleRoot(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "<p>Sign into <a href='auth/spotify'>Spotify</a></p>")
+	type RootData struct {
+		PageTitle string
+	}
+
+	tmpl, err := template.ParseFiles(layoutPaths("login")...)
+	if err != nil {
+		logger("main/handleRoot", err)
+		http.Error(w, "Internal Server Error", 500)
+	}
+
+	err = tmpl.Execute(w, RootData{
+		PageTitle: "Home",
+	})
+	if err != nil {
+		logger("main/handleRoot", err)
+		http.Error(w, "Internal Server Error", 500)
+	}
 }
 
-type DashboardData struct {
-	PageTitle string
-	Artists   []Artist
-}
+func handleAdmin(w http.ResponseWriter, r *http.Request) {
+	type AdminData struct {
+		PageTitle string
+		Artists   []Artist
+	}
 
-func handleDashboard(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFiles(viewPath + "dashboard.html"))
-	data := DashboardData{
+	tmpl, err := template.ParseFiles(layoutPaths("admin")...)
+	if err != nil {
+		logger("main/handleAdmin", err)
+		http.Error(w, "Internal Server Error", 500)
+	}
+
+	err = tmpl.Execute(w, AdminData{
 		PageTitle: "Dashboard",
 		Artists:   GetAllArtists(artistsDB),
+	})
+	if err != nil {
+		logger("main/handleAdmin", err)
+		http.Error(w, "Internal Server Error", 500)
 	}
-	tmpl.Execute(w, data)
 }
 
+// API Controllers
 func addArtistBySUI(w http.ResponseWriter, r *http.Request) {
 	SUI := spotify.ID(r.URL.Query().Get("sui"))
 	a, err := client.GetArtist(context.Background(), SUI)
@@ -151,6 +177,12 @@ func removeArtistBySUI(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Helper Functions
 func isProd() bool {
 	return len(os.Args) > 1
+}
+
+func layoutPaths(viewName string) (p []string) {
+	p = append(p, viewsPath+viewName+".tmpl", viewsPath+"header.tmpl", viewsPath+"footer.tmpl")
+	return
 }

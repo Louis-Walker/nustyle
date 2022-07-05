@@ -63,7 +63,7 @@ func completeAuthSpotify(w http.ResponseWriter, r *http.Request, auth *AuthSpoti
 	}
 
 	client := spotify.New(auth.client.Client(ctx, tok), spotify.WithRetry(true))
-	http.Redirect(w, r, r.URL.Hostname()+"/dashboard", http.StatusFound)
+	http.Redirect(w, r, r.URL.Hostname()+"/admin", http.StatusFound)
 	auth.ch <- client
 }
 
