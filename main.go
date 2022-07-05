@@ -183,6 +183,6 @@ func isProd() bool {
 }
 
 func layoutPaths(viewName string) (p []string) {
-	p = append(p, viewsPath+viewName+".tmpl", viewsPath+"header.tmpl", viewsPath+"footer.tmpl")
+	p = append(p, viewsPath+viewName+".html", viewsPath+"header.html", viewsPath+"footer.html")
 	return
 }

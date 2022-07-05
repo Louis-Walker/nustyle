@@ -8,7 +8,7 @@ header {
     margin: 5vh 0;
 }
 
-.nu-red {
+.red {
     color: #f54f62;
 }
 
@@ -28,18 +28,6 @@ header {
 
 .artist-card div input[type=button] {
     margin-left: 3%;
-    background-color: #f54f62;
-    border-color: #f54f62;
-}
-
-.artist-card div input[type=button]:hover {
-    background-color: #A63542;
-    border-color: #A63542;
-}
-
-.artist-card div input[type=button]:focus {
-    background-color: #A63542;
-    border-color: #A63542;
 }
 
 .artist-card ul {
@@ -73,4 +61,18 @@ header {
     display: inline-block;
     margin: 0;
     opacity: 65%;
+}
+
+/*Skeleton Overwrites*/
+input[type="button"].button-primary {
+    background-color: #f54f62;
+    border-color: #f54f62;
+}
+input[type="button"].button-primary:hover {
+    background-color: #A63542;
+    border-color: #A63542;
+}
+input[type="button"].button-primary:focus {
+    background-color: #A63542;
+    border-color: #A63542;
 }
