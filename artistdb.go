@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -147,12 +148,12 @@ func GetAllTrackReviews(db *sql.DB) (tReviews []TrackReview) {
 
 	for rows.Next() {
 		var (
-			id int
-			d  string
-			t  TrackReview
+			id   int
+			a, d string
+			t    TrackReview
 		)
 
-		err := rows.Scan(id, t.Name, t.SUI, t.Artists, t.ImageURL, d, t.Status)
+		err := rows.Scan(&id, &t.Name, &t.SUI, &a, &t.ImageURL, &d, &t.Status)
 		if err != nil {
 			logger("artistdb/GetAllTrackReviews", err)
 		}
@@ -161,6 +162,8 @@ func GetAllTrackReviews(db *sql.DB) (tReviews []TrackReview) {
 		if err != nil {
 			logger("artistdb/GetAllTrackReviews", err)
 		}
+
+		t.Artists = strings.Split(a, ",")
 
 		tReviews = append(tReviews, t)
 	}

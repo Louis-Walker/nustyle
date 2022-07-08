@@ -223,7 +223,7 @@ func addTrackReview(w http.ResponseWriter, r *http.Request) {
 		Name:      t.Name,
 		SUI:       SUI,
 		Artists:   artists,
-		ImageURL:  t.Album.Images[len(t.Album.Images)-1].URL,
+		ImageURL:  t.Album.Images[len(t.Album.Images)-2].URL,
 		DateAdded: now,
 		Status:    1,
 	})

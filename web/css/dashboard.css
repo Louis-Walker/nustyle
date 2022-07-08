@@ -42,14 +42,13 @@ h4 span {
     color: black;
 }
 
-#totalArtists::before {
+.total-count::before {
     content: "(";
 }
 
-#totalArtists::after {
+.total-count::after {
     content: ")";
 }
-
 
 .artist-card {
     max-width: 650px;
@@ -124,6 +123,30 @@ h4 span {
     line-height: 18px;
     text-align: center;
     color: #181818;
+}
+
+.trackreview-card ul {
+    list-style: none;
+}
+
+.track-meta {
+    color: white;
+}
+
+.track-meta span {
+    font-size: 1.8em;
+}
+
+.track-meta-artists span {
+    font-size: 1.5em;
+}
+
+.track-meta-artists span::after {
+    content: ", ";
+}
+
+.track-meta-artists span:nth-child(1)::after {
+    content: "";
 }
 
 /*Skeleton Overwrites*/
