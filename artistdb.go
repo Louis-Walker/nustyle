@@ -103,7 +103,7 @@ func UpdateLastTrack(db *sql.DB, SUIs []spotify.ID) {
 }
 
 func AddArtist(db *sql.DB, a Artist) error {
-	if !artistExists(db, a.SUI) {
+	if !recordExistsBySUI(db, "Artists", a.SUI) {
 		stmt, err := db.Prepare("INSERT INTO Artists(Name, SUI, LastTrackDateTime) VALUES (?, ?, ?)")
 		if err != nil {
 			logger("artistsdb/AddArtist", err)
@@ -121,7 +121,7 @@ func AddArtist(db *sql.DB, a Artist) error {
 }
 
 func RemoveArtist(db *sql.DB, SUI spotify.ID) error {
-	if artistExists(db, SUI) {
+	if recordExistsBySUI(db, "Artists", SUI) {
 		stmt, err := db.Prepare("DELETE FROM Artists WHERE SUI = ?")
 		if err != nil {
 			logger("artistsdb/RemoveArtist", err)
@@ -138,23 +138,58 @@ func RemoveArtist(db *sql.DB, SUI spotify.ID) error {
 	return err
 }
 
-func artistExists(db *sql.DB, SUI spotify.ID) (exists bool) {
-	exists = true
+func AddTrackReview(db *sql.DB, t TrackReview) (err error) {
+	if !(recordExistsBySUI(db, "TrackReviews", t.SUI)) {
+		stmt, err := db.Prepare("INSERT INTO TrackReviews(Name, SUI, DateAdded, Status) VALUES (?, ?, ?)")
+		if err != nil {
+			logger("artistsdb/AddTrackReview", err)
+		}
 
-	stmt, err := db.Prepare("SELECT count(*) FROM Artists WHERE SUI = ?")
+		_, err = stmt.Exec(t.Name, t.SUI, t.Review.DateAdded, t.Review.Status)
+		if err != nil {
+			logger("artistsdb/AddTrackReview", err)
+		}
+	}
+
+	return
+}
+
+func UpdateTrackReviewStatus(db *sql.DB, SUI spotify.ID, s int) (err error) {
+	if recordExistsBySUI(db, "TrackReviews", SUI) {
+		stmt, err := db.Prepare("UPDATE TrackReviews SET Status = ? WHERE SUI = ?")
+		if err != nil {
+			logger("artistsdb/UpdateTrackReviewStatus", err)
+		}
+
+		_, err = stmt.Exec(s, SUI)
+		if err != nil {
+			logger("artistsdb/UpdateTrackReviewStatus", err)
+		}
+	} else {
+		err = errors.New("Doesn't exist")
+	}
+
+	return err
+}
+
+func recordExistsBySUI(db *sql.DB, tableName string, SUI spotify.ID) (exists bool) {
+	exists = false
+	q := fmt.Sprintf("SELECT count(*) FROM %v WHERE SUI = ?", tableName)
+
+	stmt, err := db.Prepare(q)
 	if err != nil {
-		logger("artistsdb/artistExists", err)
+		logger("artistsdb/recordExistsBySUI", err)
 	}
 
 	var count int
 
 	err = stmt.QueryRow(SUI).Scan(&count)
 	if err != nil {
-		logger("artistsdb/artistExists", err)
+		logger("artistsdb/recordExistsBySUI", err)
 	}
 
-	if count == 0 {
-		exists = false
+	if count == 1 {
+		exists = true
 	}
 
 	return

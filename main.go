@@ -49,14 +49,18 @@ func main() {
 	// Routes
 	http.HandleFunc("/", basicAuth(handleRoot))
 	http.HandleFunc("/admin", basicAuth(handleAdmin))
+	// Auths
 	http.HandleFunc("/auth/spotify", func(w http.ResponseWriter, r *http.Request) {
 		handleAuthSpotify(w, r, authSpo.URL)
 	})
 	http.HandleFunc("/auth/spotify/callback", func(w http.ResponseWriter, r *http.Request) {
 		completeAuthSpotify(w, r, authSpo)
 	})
+	// Private API
 	http.HandleFunc("/api/artist/add", basicAuth(addArtistBySUI))
 	http.HandleFunc("/api/artist/remove", basicAuth(removeArtistBySUI))
+	http.HandleFunc("/api/trackreview/add", basicAuth(handleAddTrackReview))
+	http.HandleFunc("/api/trackreview/reviewed", basicAuth(HandleReviewedTrackReview))
 
 	// Handle web resources
 	cssFS := http.FileServer(http.Dir("./web/css"))
@@ -190,6 +194,54 @@ func removeArtistBySUI(w http.ResponseWriter, r *http.Request) {
 	err := RemoveArtist(artistsDB, SUI)
 	if err != nil {
 		logger("main/removeArtistBySUI", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func handleAddTrackReview(w http.ResponseWriter, r *http.Request) {
+	SUI := spotify.ID(r.URL.Query().Get("sui"))
+	nowString := time.Now().Format("2006-01-02 15:04:05+00:00")
+	now, _ := time.Parse("2006-01-02 15:04:05+00:00", nowString)
+
+	n, err := client.GetTrack(context.Background(), SUI)
+	if err != nil {
+		logger("main/addTrackReview", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	err = AddTrackReview(artistsDB, TrackReview{
+		Name:      n.Name,
+		SUI:       SUI,
+		DateAdded: now,
+		Status:    1,
+	})
+	if err != nil {
+		logger("main/addTrackReview", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func handleReviewedTrackReview(w http.ResponseWriter, r *http.Request) {
+	SUI := spotify.ID(r.URL.Query().Get("sui"))
+	s := r.URL.Query().Get("status")
+	var statusCode int
+
+	switch s {
+	case "approved":
+		statusCode = 2
+		w.WriteHeader(http.StatusOK)
+	case "denied":
+		statusCode = 3
+		w.WriteHeader(http.StatusOK)
+	default:
+		statusCode = 1
+		logger("main/handleReviewedTrackReview", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	err := UpdateTrackReviewStatus(artistsDB, SUI, statusCode)
+	if err != nil {
+		logger("main/handleReviewedTrackReview", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
