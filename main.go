@@ -59,8 +59,8 @@ func main() {
 	// Private API
 	http.HandleFunc("/api/artist/add", basicAuth(addArtistBySUI))
 	http.HandleFunc("/api/artist/remove", basicAuth(removeArtistBySUI))
-	http.HandleFunc("/api/trackreview/add", basicAuth(handleAddTrackReview))
-	http.HandleFunc("/api/trackreview/reviewed", basicAuth(HandleReviewedTrackReview))
+	http.HandleFunc("/api/trackreview/add", basicAuth(addTrackReview))
+	http.HandleFunc("/api/trackreview/reviewed", basicAuth(reviewedTrackReview))
 
 	// Handle web resources
 	cssFS := http.FileServer(http.Dir("./web/css"))
@@ -198,7 +198,7 @@ func removeArtistBySUI(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func handleAddTrackReview(w http.ResponseWriter, r *http.Request) {
+func addTrackReview(w http.ResponseWriter, r *http.Request) {
 	SUI := spotify.ID(r.URL.Query().Get("sui"))
 	nowString := time.Now().Format("2006-01-02 15:04:05+00:00")
 	now, _ := time.Parse("2006-01-02 15:04:05+00:00", nowString)
@@ -209,7 +209,7 @@ func handleAddTrackReview(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
-	err = AddTrackReview(artistsDB, TrackReview{
+	err = InsertTrackReview(artistsDB, TrackReview{
 		Name:      n.Name,
 		SUI:       SUI,
 		DateAdded: now,
@@ -221,7 +221,7 @@ func handleAddTrackReview(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func handleReviewedTrackReview(w http.ResponseWriter, r *http.Request) {
+func reviewedTrackReview(w http.ResponseWriter, r *http.Request) {
 	SUI := spotify.ID(r.URL.Query().Get("sui"))
 	s := r.URL.Query().Get("status")
 	var statusCode int

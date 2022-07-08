@@ -138,14 +138,14 @@ func RemoveArtist(db *sql.DB, SUI spotify.ID) error {
 	return err
 }
 
-func AddTrackReview(db *sql.DB, t TrackReview) (err error) {
+func InsertTrackReview(db *sql.DB, t TrackReview) (err error) {
 	if !(recordExistsBySUI(db, "TrackReviews", t.SUI)) {
 		stmt, err := db.Prepare("INSERT INTO TrackReviews(Name, SUI, DateAdded, Status) VALUES (?, ?, ?)")
 		if err != nil {
 			logger("artistsdb/AddTrackReview", err)
 		}
 
-		_, err = stmt.Exec(t.Name, t.SUI, t.Review.DateAdded, t.Review.Status)
+		_, err = stmt.Exec(t.Name, t.SUI, t.DateAdded, t.Status)
 		if err != nil {
 			logger("artistsdb/AddTrackReview", err)
 		}
