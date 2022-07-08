@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	createTrackReviewsQuery = "CREATE TABLE TrackReviews ( ID integer PRIMARY KEY, Name text, SUI text, DateAdded text, Status integer );"
+	createTrackReviewsQuery = "CREATE TABLE TrackReviews ( ID integer PRIMARY KEY, Name text, SUI text, Artists text, ImageURL text, DateAdded text, Status integer );"
 )
 
 func OpenArtistDB(path string) (db *sql.DB) {
@@ -102,7 +102,7 @@ func UpdateLastTrack(db *sql.DB, SUIs []spotify.ID) {
 	}
 }
 
-func AddArtist(db *sql.DB, a Artist) error {
+func InsertArtist(db *sql.DB, a Artist) error {
 	if !recordExistsBySUI(db, "Artists", a.SUI) {
 		stmt, err := db.Prepare("INSERT INTO Artists(Name, SUI, LastTrackDateTime) VALUES (?, ?, ?)")
 		if err != nil {
@@ -120,7 +120,7 @@ func AddArtist(db *sql.DB, a Artist) error {
 	return err
 }
 
-func RemoveArtist(db *sql.DB, SUI spotify.ID) error {
+func DeleteArtist(db *sql.DB, SUI spotify.ID) error {
 	if recordExistsBySUI(db, "Artists", SUI) {
 		stmt, err := db.Prepare("DELETE FROM Artists WHERE SUI = ?")
 		if err != nil {
@@ -140,12 +140,17 @@ func RemoveArtist(db *sql.DB, SUI spotify.ID) error {
 
 func InsertTrackReview(db *sql.DB, t TrackReview) (err error) {
 	if !(recordExistsBySUI(db, "TrackReviews", t.SUI)) {
-		stmt, err := db.Prepare("INSERT INTO TrackReviews(Name, SUI, DateAdded, Status) VALUES (?, ?, ?)")
+		stmt, err := db.Prepare("INSERT INTO TrackReviews(Name, SUI, Artists, ImageURL, DateAdded, Status) VALUES (?, ?, ?, ?, ?, ?)")
 		if err != nil {
 			logger("artistsdb/AddTrackReview", err)
 		}
 
-		_, err = stmt.Exec(t.Name, t.SUI, t.DateAdded, t.Status)
+		var artistsString string
+		for _, a := range t.Artists {
+			artistsString += fmt.Sprintf("%v,", a)
+		}
+
+		_, err = stmt.Exec(t.Name, t.SUI, artistsString, t.ImageURL, t.DateAdded, t.Status)
 		if err != nil {
 			logger("artistsdb/AddTrackReview", err)
 		}

@@ -169,7 +169,7 @@ func addArtistBySUI(w http.ResponseWriter, r *http.Request) {
 		nowString := time.Now().Format("2006-01-02 15:04:05+00:00")
 		now, _ := time.Parse("2006-01-02 15:04:05+00:00", nowString)
 
-		err = AddArtist(artistsDB, Artist{name, SUI, now})
+		err = InsertArtist(artistsDB, Artist{name, SUI, now})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			fmt.Println(err.Error())
@@ -191,7 +191,7 @@ func addArtistBySUI(w http.ResponseWriter, r *http.Request) {
 
 func removeArtistBySUI(w http.ResponseWriter, r *http.Request) {
 	SUI := spotify.ID(r.URL.Query().Get("sui"))
-	err := RemoveArtist(artistsDB, SUI)
+	err := DeleteArtist(artistsDB, SUI)
 	if err != nil {
 		logger("main/removeArtistBySUI", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -203,15 +203,22 @@ func addTrackReview(w http.ResponseWriter, r *http.Request) {
 	nowString := time.Now().Format("2006-01-02 15:04:05+00:00")
 	now, _ := time.Parse("2006-01-02 15:04:05+00:00", nowString)
 
-	n, err := client.GetTrack(context.Background(), SUI)
+	t, err := client.GetTrack(context.Background(), SUI)
 	if err != nil {
 		logger("main/addTrackReview", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
+	var artists []string
+	for _, a := range t.Artists {
+		artists = append(artists, a.Name)
+	}
+
 	err = InsertTrackReview(artistsDB, TrackReview{
-		Name:      n.Name,
+		Name:      t.Name,
 		SUI:       SUI,
+		Artists:   artists,
+		ImageURL:  t.Album.Images[len(t.Album.Images)-1].URL,
 		DateAdded: now,
 		Status:    1,
 	})

@@ -18,6 +18,22 @@
         </ul>
     </div>
 
+    <div class="six columns trackreview-card">
+        <div class="row">
+            <h4 class="three columns">Track Reviews <span id="totalTracks">{{.TotalTracks}}</span></h4>
+        </div>
+
+        <ul id="trackReviewsList">
+            {{range .TrackReviews}}
+            <li data-sui="{{.SUI}}">
+                <a class="six columns" href="https://open.spotify.com/artist/{{.SUI}}">{{.Name}}</a>
+                <p class="five columns">{{.SUI}}</p>
+                <input class="one column u-pull-right removeBTN" type="button" value="X">
+            </li>
+            {{end}}
+        </ul>
+    </div>
+
     <div class="six columns"></div>
 </div>
 {{template "footer"}}

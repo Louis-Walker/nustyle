@@ -44,6 +44,6 @@ func main() {
 			LastTrackDateTime: dateTime,
 		}
 
-		nu.AddArtist(db, newArtist)
+		nu.InsertArtist(db, newArtist)
 	}
 }
