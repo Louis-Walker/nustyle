@@ -117,7 +117,7 @@ func (p *Playlist) getNewestTracks(ctx context.Context, db *sql.DB, spo *spotify
 								SUI:       track.ID,
 								Artists:   artists,
 								ImageURL:  imgs[len(imgs)-2].URL,
-								DateAdded: time.Now(),
+								DateAdded: DateTimeFormat(time.Now()),
 								Status:    1,
 							})
 						}
@@ -190,7 +190,6 @@ func isAdded(tracks []spotify.PlaylistTrack, id spotify.ID) (added bool) {
 			added = true
 		}
 	}
-
 	return
 }
 

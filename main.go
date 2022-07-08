@@ -171,10 +171,8 @@ func addArtistBySUI(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not a valid URI", http.StatusNotFound)
 	} else {
 		name := a.Name
-		nowString := time.Now().Format("2006-01-02 15:04:05+00:00")
-		now, _ := time.Parse("2006-01-02 15:04:05+00:00", nowString)
 
-		err = InsertArtist(artistsDB, Artist{name, SUI, now})
+		err = InsertArtist(artistsDB, Artist{name, SUI, DateTimeFormat(time.Now())})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			fmt.Println(err.Error())
@@ -205,8 +203,6 @@ func removeArtistBySUI(w http.ResponseWriter, r *http.Request) {
 
 func addTrackReview(w http.ResponseWriter, r *http.Request) {
 	SUI := spotify.ID(r.URL.Query().Get("sui"))
-	nowString := time.Now().Format("2006-01-02 15:04:05+00:00")
-	now, _ := time.Parse("2006-01-02 15:04:05+00:00", nowString)
 
 	t, err := client.GetTrack(context.Background(), SUI)
 	if err != nil {
@@ -224,7 +220,7 @@ func addTrackReview(w http.ResponseWriter, r *http.Request) {
 		SUI:       SUI,
 		Artists:   artists,
 		ImageURL:  t.Album.Images[len(t.Album.Images)-2].URL,
-		DateAdded: now,
+		DateAdded: DateTimeFormat(time.Now()),
 		Status:    1,
 	})
 	if err != nil {
@@ -265,5 +261,14 @@ func isProd() bool {
 
 func layoutPaths(viewName string) (p []string) {
 	p = append(p, viewsPath+viewName+".html", viewsPath+"header.html", viewsPath+"footer.html")
+	return
+}
+
+func DateTimeFormat(t time.Time) (timeFormatted time.Time) {
+	timeFormatted, err := time.Parse("2006-01-02 15:04:05", time.Now().Format("2006-01-02 15:04:05"))
+	fmt.Println(timeFormatted)
+	if err != nil {
+		logger("playlist/dateTimeFormat", err)
+	}
 	return
 }

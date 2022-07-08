@@ -129,6 +129,10 @@ h4 span {
     list-style: none;
 }
 
+.trackreview-card ul li {
+    background-color: #181818;
+}
+
 .track-meta {
     color: white;
 }
