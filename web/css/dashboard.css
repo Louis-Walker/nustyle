@@ -1,5 +1,5 @@
 body {
-    padding-left: 10vw;
+    padding: 0 5vw;
     background-color: #121212;
     color: white;
 }
@@ -53,7 +53,7 @@ h4 span {
 .artist-card {
     max-width: 650px;
     min-width: 550px;
-    margin-left: 10vw;
+    margin-left: 5vw;
 }
 
 .artist-card div {

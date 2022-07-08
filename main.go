@@ -100,7 +100,7 @@ func main() {
 	defer ctx.Done()
 
 	// Semi-hourly crawler for releases
-	//go playlist.Playlister(client)
+	go playlist.Playlister(artistsDB, client)
 
 	exit := make(chan string)
 	for {

@@ -1,24 +1,6 @@
 {{template "header" .}}
 <div class="row">
-    <div class="six columns artist-card">
-        <div class="row">
-            <h4 class="three columns">Artists <span id="totalArtists" class="total-count">{{.TotalArtists}}</span></h4>
-            <input class="button-primary u-pull-right" id="addBTN" type="button" value="Add">
-            <input class="six columns u-pull-right" id="SUI" type="text" placeholder="Artist's Spotify URI">
-        </div>
-
-        <ul id="artistList">
-            {{range .Artists}}
-            <li data-sui="{{.SUI}}">
-                <a class="six columns" href="https://open.spotify.com/artist/{{.SUI}}">{{.Name}}</a>
-                <p class="five columns">{{.SUI}}</p>
-                <input class="one column u-pull-right removeBTN" type="button" value="X">
-            </li>
-            {{end}}
-        </ul>
-    </div>
-
-    <div class="six columns trackreview-card">
+    <div class="five columns trackreview-card">
         <div class="row">
             <h4 class="twelve columns">Track Reviews <span id="totalTrackReviews" class="total-count">{{.TotalTrackReviews}}</span></h4>
         </div>
@@ -43,6 +25,22 @@
         </ul>
     </div>
 
-    <div class="six columns"></div>
+    <div class="five columns artist-card">
+        <div class="row">
+            <h4 class="three columns">Artists <span id="totalArtists" class="total-count">{{.TotalArtists}}</span></h4>
+            <input class="button-primary u-pull-right" id="addBTN" type="button" value="Add">
+            <input class="six columns u-pull-right" id="SUI" type="text" placeholder="Artist's Spotify URI">
+        </div>
+
+        <ul id="artistList">
+            {{range .Artists}}
+            <li data-sui="{{.SUI}}">
+                <a class="six columns" href="https://open.spotify.com/artist/{{.SUI}}">{{.Name}}</a>
+                <p class="five columns">{{.SUI}}</p>
+                <input class="one column u-pull-right removeBTN" type="button" value="X">
+            </li>
+            {{end}}
+        </ul>
+    </div>
 </div>
 {{template "footer"}}

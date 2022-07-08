@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -22,7 +23,7 @@ func NewPlaylist(id spotify.ID) (*Playlist, error) {
 	return p, err
 }
 
-func (p *Playlist) Playlister(spo *spotify.Client) {
+func (p *Playlist) Playlister(db *sql.DB, spo *spotify.Client) {
 	for {
 		artists := GetAllArtists(artistsDB)
 		artistsUpdated := 0
@@ -38,7 +39,7 @@ func (p *Playlist) Playlister(spo *spotify.Client) {
 
 		fmt.Println("[NU] Initiating Release Crawler")
 		for _, a := range artists {
-			trackIDs, trackArtists := p.getNewestTracks(ctx, spo, a)
+			trackIDs, trackArtists := p.getNewestTracks(ctx, db, spo, a)
 
 			if len(trackIDs) > 0 {
 				_, err := spo.AddTracksToPlaylist(ctx, p.ID, trackIDs...)
@@ -61,7 +62,7 @@ func (p *Playlist) Playlister(spo *spotify.Client) {
 	}
 }
 
-func (p *Playlist) getNewestTracks(ctx context.Context, spo *spotify.Client, a Artist) (newTracks, artists []spotify.ID) {
+func (p *Playlist) getNewestTracks(ctx context.Context, db *sql.DB, spo *spotify.Client, a Artist) (newTracks, artists []spotify.ID) {
 	albums, err := spo.GetArtistAlbums(ctx, spotify.ID(a.SUI), []spotify.AlbumType{1, 2})
 	if err != nil {
 		logger("Playlist/GetNewestTracks", err)
@@ -82,7 +83,7 @@ func (p *Playlist) getNewestTracks(ctx context.Context, spo *spotify.Client, a A
 				}
 
 				for _, track := range tracks.Tracks {
-					if !isAdded(p.Tracks, track.ID, track.Name) && !isExtended(track.Name) {
+					if !isAdded(p.Tracks, track.ID, track.Name) && !isExtended(track.Name) && isLengthy(track.Duration) {
 						newTracks = append(newTracks, track.ID)
 
 						// Add track to p.Tracks instead of calling API again to refresh slice
@@ -98,6 +99,26 @@ func (p *Playlist) getNewestTracks(ctx context.Context, spo *spotify.Client, a A
 						for _, a := range track.Artists {
 							artists = append(artists, a.ID)
 						}
+					} else {
+						var artists []string
+						for _, a := range track.Artists {
+							artists = append(artists, fmt.Sprintf("%v, ", a.Name))
+						}
+
+						t, err := spo.GetTrack(ctx, track.ID)
+						if err != nil {
+							logger("Playlist/GetNewestTracks", err)
+						}
+						imgs := t.Album.Images
+
+						InsertTrackReview(db, TrackReview{
+							Name:      track.Name,
+							SUI:       track.ID,
+							Artists:   artists,
+							ImageURL:  imgs[len(imgs)-2].URL,
+							DateAdded: time.Now(),
+							Status:    1,
+						})
 					}
 				}
 
@@ -157,6 +178,7 @@ func (p *Playlist) weeklyUpdater(ctx context.Context, spo *spotify.Client) {
 	}
 }
 
+// Helper Functions
 func isAdded(tracks []spotify.PlaylistTrack, id spotify.ID, name string) (added bool) {
 	for i := 0; i < len(tracks); i++ {
 		t := tracks[i].Track
@@ -184,5 +206,13 @@ func isExtended(t string) (extended bool) {
 		extended = true
 	}
 
+	return
+}
+
+func isLengthy(t int) (lengthy bool) {
+	lengthy = false
+	if (t > 90*1000) && (t < 320*1000) {
+		lengthy = true
+	}
 	return
 }
