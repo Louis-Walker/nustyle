@@ -83,42 +83,44 @@ func (p *Playlist) getNewestTracks(ctx context.Context, db *sql.DB, spo *spotify
 				}
 
 				for _, track := range tracks.Tracks {
-					if !isAdded(p.Tracks, track.ID, track.Name) && !isExtended(track.Name) && isLengthy(track.Duration) {
-						newTracks = append(newTracks, track.ID)
+					if !isAdded(p.Tracks, track.ID) {
+						if !isExtended(track.Name) && isLengthy(track.Duration) && !(isSimilarName(p.Tracks, track.Name, track.ID)) {
+							newTracks = append(newTracks, track.ID)
 
-						// Add track to p.Tracks instead of calling API again to refresh slice
-						p.Tracks = append(p.Tracks, spotify.PlaylistTrack{
-							Track: spotify.FullTrack{
-								SimpleTrack: spotify.SimpleTrack{
-									ID:   track.ID,
-									Name: track.Name,
+							// Add track to p.Tracks instead of calling API again to refresh slice
+							p.Tracks = append(p.Tracks, spotify.PlaylistTrack{
+								Track: spotify.FullTrack{
+									SimpleTrack: spotify.SimpleTrack{
+										ID:   track.ID,
+										Name: track.Name,
+									},
 								},
-							},
-						})
+							})
 
-						for _, a := range track.Artists {
-							artists = append(artists, a.ID)
-						}
-					} else {
-						var artists []string
-						for _, a := range track.Artists {
-							artists = append(artists, fmt.Sprintf("%v, ", a.Name))
-						}
+							for _, a := range track.Artists {
+								artists = append(artists, a.ID)
+							}
+						} else {
+							var artists []string
+							for _, a := range track.Artists {
+								artists = append(artists, fmt.Sprintf("%v", a.Name))
+							}
 
-						t, err := spo.GetTrack(ctx, track.ID)
-						if err != nil {
-							logger("Playlist/GetNewestTracks", err)
-						}
-						imgs := t.Album.Images
+							t, err := spo.GetTrack(ctx, track.ID)
+							if err != nil {
+								logger("Playlist/GetNewestTracks", err)
+							}
+							imgs := t.Album.Images
 
-						InsertTrackReview(db, TrackReview{
-							Name:      track.Name,
-							SUI:       track.ID,
-							Artists:   artists,
-							ImageURL:  imgs[len(imgs)-2].URL,
-							DateAdded: time.Now(),
-							Status:    1,
-						})
+							InsertTrackReview(db, TrackReview{
+								Name:      track.Name,
+								SUI:       track.ID,
+								Artists:   artists,
+								ImageURL:  imgs[len(imgs)-2].URL,
+								DateAdded: time.Now(),
+								Status:    1,
+							})
+						}
 					}
 				}
 
@@ -179,11 +181,12 @@ func (p *Playlist) weeklyUpdater(ctx context.Context, spo *spotify.Client) {
 }
 
 // Helper Functions
-func isAdded(tracks []spotify.PlaylistTrack, id spotify.ID, name string) (added bool) {
+func isAdded(tracks []spotify.PlaylistTrack, id spotify.ID) (added bool) {
 	for i := 0; i < len(tracks); i++ {
 		t := tracks[i].Track
+		//&& || t.Album.ReleaseDateTime().Before(time.Now().Truncate(time.Hour*24).Add(-time.Minute*30))
 		// Work around for still adding track released today without refreshing playlist for weeklyUpdater
-		if t.ID == id || t.Name == name && t.Album.ReleaseDateTime().Before(time.Now().Truncate(time.Hour*24).Add(-time.Minute*30)) {
+		if t.ID == id {
 			added = true
 		}
 	}
@@ -193,11 +196,9 @@ func isAdded(tracks []spotify.PlaylistTrack, id spotify.ID, name string) (added 
 
 func isNew(tDate, lDate time.Time) (elapsed bool) {
 	lElapsed := time.Now().Truncate(time.Hour * 24).Add(-(time.Minute * 30))
-
 	if tDate.After(lElapsed) {
 		elapsed = true
 	}
-
 	return
 }
 
@@ -205,14 +206,23 @@ func isExtended(t string) (extended bool) {
 	if strings.Contains(t, "Extended") || strings.Contains(t, "extended") {
 		extended = true
 	}
-
 	return
 }
 
 func isLengthy(t int) (lengthy bool) {
-	lengthy = false
 	if (t > 90*1000) && (t < 320*1000) {
 		lengthy = true
+	}
+	return
+}
+
+func isSimilarName(tracks []spotify.PlaylistTrack, name string, sui spotify.ID) (similar bool) {
+	for i := 0; i < len(tracks); i++ {
+		t := tracks[i].Track
+
+		if t.Name == name {
+			similar = true
+		}
 	}
 	return
 }
