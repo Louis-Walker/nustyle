@@ -13,6 +13,10 @@ import (
 	"github.com/zmb3/spotify/v2"
 )
 
+const (
+	createTrackReviewsQuery = "CREATE TABLE TrackReviews ( ID integer PRIMARY KEY, Name text, SUI text, DateAdded text, Status integer );"
+)
+
 func OpenArtistDB(path string) (db *sql.DB) {
 	if _, err := os.Stat(path); err != nil {
 		fmt.Println("Artist database does not exist. Creating new database.")
@@ -30,6 +34,24 @@ func OpenArtistDB(path string) (db *sql.DB) {
 	}
 
 	db.SetMaxOpenConns(1)
+
+	// Production db doesn't contain table yet
+	res, err := db.Exec("SELECT name FROM sqlite_master WHERE type='table' AND name='TrackReviews'")
+	if err != nil {
+		logger("artistsdb/OpenArtistDB", err)
+	}
+
+	s, err := res.LastInsertId()
+	if err != nil {
+		logger("artistsdb/OpenArtistDB", err)
+	}
+
+	if s == 0 {
+		err = createTable(db, createTrackReviewsQuery)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 
 	return
 }
@@ -145,15 +167,21 @@ func createDB(p string) (err error) {
 	}
 
 	db := OpenArtistDB(p)
-	q := "CREATE TABLE Artists ( ID integer PRIMARY KEY, Name text, SUI text, LastTrackDateTime text);"
+	err = createTable(db, "CREATE TABLE Artists ( ID integer PRIMARY KEY, Name text, SUI text, LastTrackDateTime text );")
+	if err != nil {
+		log.Fatal("createDB - failed to create Artists table.")
+	}
+	err = createTable(db, createTrackReviewsQuery)
+	if err != nil {
+		log.Fatal("createDB - failed to create TrackReviews table.")
+	}
+	return
+}
 
+func createTable(db *sql.DB, q string) (err error) {
 	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelfunc()
 
 	_, err = db.ExecContext(ctx, q)
-	if err != nil {
-		log.Fatal("createDB - failed to create Artists table.")
-	}
-
 	return
 }
