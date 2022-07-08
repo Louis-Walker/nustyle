@@ -178,9 +178,17 @@ func InsertTrackReview(db *sql.DB, t TrackReview) (err error) {
 			logger("artistsdb/AddTrackReview", err)
 		}
 
+		comma := func(i int, a []string) string {
+			if len(a) > 1 && (i+1) != len(a) {
+				return ","
+			} else {
+				return ""
+			}
+		}
+
 		var artistsString string
-		for _, a := range t.Artists {
-			artistsString += fmt.Sprintf("%v,", a)
+		for i, a := range t.Artists {
+			artistsString += fmt.Sprintf("%v%v", a, comma(i, t.Artists))
 		}
 
 		_, err = stmt.Exec(t.Name, t.SUI, artistsString, t.ImageURL, t.DateAdded, t.Status)

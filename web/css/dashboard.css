@@ -78,7 +78,6 @@ h4 span {
 }
 
 .artist-card ul li {
-    width: 100% - 2vw;
     margin: 1px;
     padding: 2px 1vw;
     background-color: #181818;
@@ -130,19 +129,38 @@ h4 span {
 }
 
 .trackreview-card ul li {
+    width: 100%;
+    height: 64px;
+    padding: 2px 1vw 2px 0;
     background-color: #181818;
+    border-radius: 4px;
+}
+
+.trackreview-card ul li a:hover .track-meta {
+    color: #f54f62;
+}
+
+.trackreview a img {
+    width: 64px;
 }
 
 .track-meta {
+    padding-top: 5px;
     color: white;
+    line-height: 26px;
 }
 
 .track-meta span {
-    font-size: 1.8em;
+    font-size: 1.6em;
+}
+
+.track-meta-artists {
+    margin-top: 2px;
+    opacity: 70%;
 }
 
 .track-meta-artists span {
-    font-size: 1.5em;
+    font-size: 1.2em;
 }
 
 .track-meta-artists span::after {
@@ -151,6 +169,10 @@ h4 span {
 
 .track-meta-artists span:nth-child(1)::after {
     content: "";
+}
+
+.approveBTN {
+    margin-top: 12px;
 }
 
 /*Skeleton Overwrites*/
