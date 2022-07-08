@@ -9,9 +9,9 @@ import (
 type TrackReview struct {
 	ID        int
 	Name      string
+	SUI       spotify.ID
 	Artists   []string
 	ImageURL  string
-	SUI       spotify.ID
 	DateAdded time.Time
 	Status    int
 }

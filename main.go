@@ -134,9 +134,11 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 
 func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	type AdminData struct {
-		PageTitle    string
-		Artists      []Artist
-		TotalArtists int
+		PageTitle         string
+		Artists           []Artist
+		TotalArtists      int
+		TrackReviews      []TrackReview
+		TotalTrackReviews int
 	}
 
 	tmpl, err := template.ParseFiles(layoutPaths("admin")...)
@@ -146,10 +148,13 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a := GetAllArtists(artistsDB)
+	t := GetAllTrackReviews(artistsDB)
 	err = tmpl.Execute(w, AdminData{
-		PageTitle:    "Dashboard",
-		Artists:      a,
-		TotalArtists: len(a),
+		PageTitle:         "Dashboard",
+		Artists:           a,
+		TotalArtists:      len(a),
+		TrackReviews:      t,
+		TotalTrackReviews: len(t),
 	})
 	if err != nil {
 		logger("main/handleAdmin", err)

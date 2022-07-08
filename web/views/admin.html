@@ -26,9 +26,18 @@
         <ul id="trackReviewsList">
             {{range .TrackReviews}}
             <li data-sui="{{.SUI}}">
-                <a class="six columns" href="https://open.spotify.com/artist/{{.SUI}}">{{.Name}}</a>
-                <p class="five columns">{{.SUI}}</p>
-                <input class="one column u-pull-right removeBTN" type="button" value="X">
+                <a class="six columns" href="https://open.spotify.com/track/{{.SUI}}">
+                    <img src="{{.ImageURL}}" alt="https://via.placeholder.com/150">
+                    <div>
+                        <span>{{.Name}}</span>
+                        <span>
+                            {{range .Artists}}
+                            {{.Artist}}, 
+                            {{end}}
+                        </span>
+                    </div>
+                </a>
+                <input class="one column u-pull-right approveBTN" type="button" value="Approve">
             </li>
             {{end}}
         </ul>

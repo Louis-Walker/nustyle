@@ -36,17 +36,18 @@ func OpenArtistDB(path string) (db *sql.DB) {
 	db.SetMaxOpenConns(1)
 
 	// Production db doesn't contain table yet
-	res, err := db.Exec("SELECT name FROM sqlite_master WHERE type='table' AND name='TrackReviews'")
+	row := db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='TrackReviews'")
 	if err != nil {
 		logger("artistsdb/OpenArtistDB", err)
 	}
 
-	s, err := res.LastInsertId()
+	var name string
+	row.Scan(&name)
 	if err != nil {
 		logger("artistsdb/OpenArtistDB", err)
 	}
 
-	if s == 0 {
+	if name != "TrackReviews" {
 		err = createTable(db, createTrackReviewsQuery)
 		if err != nil {
 			log.Fatal(err)
@@ -57,20 +58,20 @@ func OpenArtistDB(path string) (db *sql.DB) {
 }
 
 func GetAllArtists(db *sql.DB) (artists []Artist) {
-	aa, err := db.Query("SELECT * FROM Artists")
+	rows, err := db.Query("SELECT * FROM Artists")
 	if err != nil {
 		logger("artistsdb/GetAllArtists", err)
 	}
-	defer aa.Close()
+	defer rows.Close()
 
-	for aa.Next() {
+	for rows.Next() {
 		var (
 			id                int
 			lastTrackDateTime string
 			a                 Artist
 		)
 
-		err := aa.Scan(&id, &a.Name, &a.SUI, &lastTrackDateTime)
+		err := rows.Scan(&id, &a.Name, &a.SUI, &lastTrackDateTime)
 		if err != nil {
 			logger("artistsdb/GetAllArtists", err)
 		}
@@ -136,6 +137,35 @@ func DeleteArtist(db *sql.DB, SUI spotify.ID) error {
 	}
 
 	return err
+}
+
+func GetAllTrackReviews(db *sql.DB) (tReviews []TrackReview) {
+	rows, err := db.Query("SELECT * FROM TrackReviews WHERE Status = 1")
+	if err != nil {
+		logger("artistdb/GetAllTrackReviews", err)
+	}
+
+	for rows.Next() {
+		var (
+			id int
+			d  string
+			t  TrackReview
+		)
+
+		err := rows.Scan(id, t.Name, t.SUI, t.Artists, t.ImageURL, d, t.Status)
+		if err != nil {
+			logger("artistdb/GetAllTrackReviews", err)
+		}
+
+		t.DateAdded, err = time.Parse("2006-01-02 15:04:05+00:00", d)
+		if err != nil {
+			logger("artistdb/GetAllTrackReviews", err)
+		}
+
+		tReviews = append(tReviews, t)
+	}
+
+	return
 }
 
 func InsertTrackReview(db *sql.DB, t TrackReview) (err error) {
