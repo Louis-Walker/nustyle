@@ -1,8 +1,12 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"log"
+	"os"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -10,6 +14,16 @@ import (
 )
 
 func OpenArtistDB(path string) (db *sql.DB) {
+	if _, err := os.Stat(path); err != nil {
+		fmt.Println("Artist database does not exist. Creating new database.")
+		err := createDB(path)
+		if err != nil {
+			log.Fatal(err)
+		} else {
+			fmt.Println("Artist database successfully created.")
+		}
+	}
+
 	db, err := sql.Open("sqlite3", path)
 	if err != nil {
 		logger("artistsdb/OpenArtistDB", err)
@@ -119,6 +133,26 @@ func artistExists(db *sql.DB, SUI spotify.ID) (exists bool) {
 
 	if count == 0 {
 		exists = false
+	}
+
+	return
+}
+
+func createDB(p string) (err error) {
+	err = os.WriteFile(p, nil, 0777)
+	if err != nil {
+		log.Fatal("createDB - failed to write file.")
+	}
+
+	db := OpenArtistDB(p)
+	q := "CREATE TABLE Artists ( ID integer PRIMARY KEY, Name text, SUI text, LastTrackDateTime text);"
+
+	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelfunc()
+
+	_, err = db.ExecContext(ctx, q)
+	if err != nil {
+		log.Fatal("createDB - failed to create Artists table.")
 	}
 
 	return
