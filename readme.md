@@ -1,6 +1,6 @@
 # Nustyle
-Hardstyle release radar for Spotify
-[Spotify Playlist](https://open.spotify.com/playlist/0TdRzSP9GMdDcnuZd7wSTE?si=a6107a78cf1b4772)
+Hardstyle release radar for Spotify  
+Click[here](https://open.spotify.com/playlist/0TdRzSP9GMdDcnuZd7wSTE?si=a6107a78cf1b4772)to see the playlist
 
 ![Dashboard](/web/images/dashboard.PNG)
 
