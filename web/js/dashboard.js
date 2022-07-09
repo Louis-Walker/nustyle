@@ -1,6 +1,7 @@
-const artistURL = "http://localhost:8080/api/artist/";
+const apiURL = getApiURL();
 const addBTN = document.getElementById("addBTN");
 const removeBTNs = document.getElementsByClassName("removeBTN");
+const approveBTNs = document.getElementsByClassName("approveBTN");
 
 class Artist {
     constructor(name, SUI) {
@@ -48,6 +49,28 @@ function removeBTNListener(e) {
     }
 }
 
+for (let i = 0; approveBTNs.length > i; i++) {
+    approveBTNs[i].addEventListener("click", (e) => approveBTNsListener(e));
+}
+
+function approveBTNsListener(e) {
+    let btn = e.target;
+    let sui = btn.parentNode.dataset.sui;
+    if (sui.length == 0) {
+        window.alert("Please enter a track's Spotify URI");
+    } else {
+        approveTrack(sui)
+        .then(status => {
+            if (status != 200) {
+                window.alert("Was not able to remove artist");
+            } else if (status == 200) {
+                document.querySelector('[data-sui="'+sui+'"]').remove();
+                document.getElementById("totalArtists").innerHTML -= 1;
+            }
+        });
+    }
+}
+
 function artistListAdd(artist) {
     let listEle = document.getElementById("artistList");
     let artistEle = document.createElement("li");
@@ -77,14 +100,21 @@ function artistListAdd(artist) {
 
 // API Calls
 async function addArtist(sui) {
-    const url = artistURL + "add?sui=" + sui;
+    const url = apiURL + "artist/add?sui=" + sui;
     const res = await fetch(url);
 
     return res;
 }
 
 async function removeArtist(sui) {
-    const url = artistURL + "remove?sui=" + sui;
+    const url = apiURL + "artist/remove?sui=" + sui;
+    const res = await fetch(url);
+
+    return res.status;
+}
+
+async function approveTrack(sui) {
+    const url = apiURL + "trackreview/reviewed?sui=" + sui + "?status=approved";
     const res = await fetch(url);
 
     return res.status;
@@ -97,3 +127,7 @@ function classAdder(cl, classes) {
         cl.classList.add(c);
     });
 }
+
+function getApiURL() {
+    return window.location.href.includes("localhost") ? "http://localhost:8080/api/" : "https://quiet-reaches-27997.herokuapp.com";
+};

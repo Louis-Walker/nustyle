@@ -46,28 +46,8 @@ func main() {
 		logger("main/main", err)
 	}
 
-	// Routes
-	http.HandleFunc("/", basicAuth(handleRoot))
-	http.HandleFunc("/admin", basicAuth(handleAdmin))
-	// Auths
-	http.HandleFunc("/auth/spotify", func(w http.ResponseWriter, r *http.Request) {
-		handleAuthSpotify(w, r, authSpo.URL)
-	})
-	http.HandleFunc("/auth/spotify/callback", func(w http.ResponseWriter, r *http.Request) {
-		completeAuthSpotify(w, r, authSpo)
-	})
-	// Private API
-	http.HandleFunc("/api/artist/add", basicAuth(addArtistBySUI))
-	http.HandleFunc("/api/artist/remove", basicAuth(removeArtistBySUI))
-	http.HandleFunc("/api/trackreview/add", basicAuth(addTrackReview))
-	http.HandleFunc("/api/trackreview/reviewed", basicAuth(reviewedTrackReview))
-
-	// Handle web resources
-	cssFS := http.FileServer(http.Dir("./web/css"))
-	http.Handle("/css/", http.StripPrefix("/css", cssFS))
-	jsFS := http.FileServer(http.Dir("./web/js"))
-	http.Handle("/js/", http.StripPrefix("/js", jsFS))
-
+	// Web Server
+	webHandlers()
 	go func() {
 		port := os.Getenv("PORT")
 		if port == "" {
@@ -100,7 +80,7 @@ func main() {
 	defer ctx.Done()
 
 	// Semi-hourly crawler for releases
-	go playlist.Playlister(artistsDB, client)
+	//go playlist.Playlister(artistsDB, client)
 
 	exit := make(chan string)
 	for {
@@ -109,6 +89,30 @@ func main() {
 			os.Exit(0)
 		}
 	}
+}
+
+func webHandlers() {
+	// Routes
+	http.HandleFunc("/", basicAuth(handleRoot))
+	http.HandleFunc("/admin", basicAuth(handleAdmin))
+	// Auths
+	http.HandleFunc("/auth/spotify", func(w http.ResponseWriter, r *http.Request) {
+		handleAuthSpotify(w, r, authSpo.URL)
+	})
+	http.HandleFunc("/auth/spotify/callback", func(w http.ResponseWriter, r *http.Request) {
+		completeAuthSpotify(w, r, authSpo)
+	})
+	// Private API
+	http.HandleFunc("/api/artist/add", basicAuth(addArtistBySUI))
+	http.HandleFunc("/api/artist/remove", basicAuth(removeArtistBySUI))
+	http.HandleFunc("/api/trackreview/add", basicAuth(addTrackReview))
+	http.HandleFunc("/api/trackreview/reviewed", basicAuth(reviewedTrackReview))
+
+	// Handle web resources
+	cssFS := http.FileServer(http.Dir("./web/css"))
+	http.Handle("/css/", http.StripPrefix("/css", cssFS))
+	jsFS := http.FileServer(http.Dir("./web/js"))
+	http.Handle("/js/", http.StripPrefix("/js", jsFS))
 }
 
 // View Controllers
@@ -233,7 +237,7 @@ func reviewedTrackReview(w http.ResponseWriter, r *http.Request) {
 	SUI := spotify.ID(r.URL.Query().Get("sui"))
 	s := r.URL.Query().Get("status")
 	var statusCode int
-
+	fmt.Println(s)
 	switch s {
 	case "approved":
 		statusCode = 2
@@ -243,13 +247,13 @@ func reviewedTrackReview(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	default:
 		statusCode = 1
-		logger("main/handleReviewedTrackReview", err)
+		logger("main/reviewedTrackReview", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	err := UpdateTrackReviewStatus(artistsDB, SUI, statusCode)
 	if err != nil {
-		logger("main/handleReviewedTrackReview", err)
+		logger("main/reviewedTrackReview", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
