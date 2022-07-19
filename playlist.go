@@ -134,7 +134,7 @@ func (p *Playlist) getNewestTracks(ctx context.Context, db *sql.DB, spo *spotify
 
 func (p *Playlist) weeklyUpdater(ctx context.Context, spo *spotify.Client) {
 	// Only updates playlist if its past 5pm on monday
-	if int(time.Now().Weekday()) == 1 && time.Now().Hour() >= 17 && len(p.Tracks) > 20 {
+	if int(time.Now().Weekday()) == 1 && time.Now().Hour() >= 17 && len(p.Tracks) > 16 {
 		playlist, err := spo.GetPlaylist(ctx, p.ID)
 		if err != nil {
 			logger("Playlist/UpdatePlaylist", err)

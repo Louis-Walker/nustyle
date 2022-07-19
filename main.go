@@ -272,7 +272,7 @@ func DateTimeFormat(t time.Time) (timeFormatted time.Time) {
 	timeFormatted, err := time.Parse("2006-01-02 15:04:05", time.Now().Format("2006-01-02 15:04:05"))
 	fmt.Println(timeFormatted)
 	if err != nil {
-		logger("playlist/dateTimeFormat", err)
+		logger("main/DateTimeFormat", err)
 	}
 	return
 }
