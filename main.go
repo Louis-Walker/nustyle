@@ -173,27 +173,27 @@ func addArtistBySUI(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger("main/addArtistBySUI", err)
 		http.Error(w, "Not a valid URI", http.StatusNotFound)
-	} else {
-		name := a.Name
-
-		err = InsertArtist(artistsDB, Artist{name, SUI, DateTimeFormat(time.Now())})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			fmt.Println(err.Error())
-		}
-
-		w.WriteHeader(http.StatusOK)
-		w.Header().Set("Content-Type", "application/json")
-		res := make(map[string]string)
-		res["status"] = "200"
-		res["name"] = name
-		jsonRes, err := json.Marshal(res)
-		if err != nil {
-			logger("main/addArtistBySUI", err)
-		}
-
-		w.Write(jsonRes)
+		return
 	}
+
+	name := a.Name
+	err = InsertArtist(artistsDB, Artist{name, SUI, DateTimeFormat(time.Now())})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		fmt.Println(err.Error())
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	res := make(map[string]string)
+	res["status"] = "200"
+	res["name"] = name
+	jsonRes, err := json.Marshal(res)
+	if err != nil {
+		logger("main/addArtistBySUI", err)
+	}
+
+	w.Write(jsonRes)
 }
 
 func removeArtistBySUI(w http.ResponseWriter, r *http.Request) {

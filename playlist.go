@@ -181,47 +181,52 @@ func (p *Playlist) weeklyUpdater(ctx context.Context, spo *spotify.Client) {
 }
 
 // Helper Functions
-func isAdded(tracks []spotify.PlaylistTrack, id spotify.ID) (added bool) {
+func isAdded(tracks []spotify.PlaylistTrack, id spotify.ID) bool {
+	a := false
 	for i := 0; i < len(tracks); i++ {
 		t := tracks[i].Track
 		//&& || t.Album.ReleaseDateTime().Before(time.Now().Truncate(time.Hour*24).Add(-time.Minute*30))
 		// Work around for still adding track released today without refreshing playlist for weeklyUpdater
 		if t.ID == id {
-			added = true
+			a = true
 		}
 	}
-	return
+	return a
 }
 
-func isNew(tDate, lDate time.Time) (elapsed bool) {
+func isNew(tDate, lDate time.Time) bool {
+	e := false
 	lElapsed := time.Now().Truncate(time.Hour * 24).Add(-(time.Minute * 30))
 	if tDate.After(lElapsed) {
-		elapsed = true
+		e = true
 	}
-	return
+	return e
 }
 
-func isExtended(t string) (extended bool) {
+func isExtended(t string) bool {
+	e := false
 	if strings.Contains(t, "Extended") || strings.Contains(t, "extended") {
-		extended = true
+		e = true
 	}
-	return
+	return e
 }
 
-func isLengthy(t int) (lengthy bool) {
+func isLengthy(t int) bool {
+	l := false
 	if (t > 90*1000) && (t < 320*1000) {
-		lengthy = true
+		l = true
 	}
-	return
+	return l
 }
 
-func isSimilarName(tracks []spotify.PlaylistTrack, name string, sui spotify.ID) (similar bool) {
+func isSimilarName(tracks []spotify.PlaylistTrack, name string, sui spotify.ID) bool {
+	s := false
 	for i := 0; i < len(tracks); i++ {
 		t := tracks[i].Track
 
 		if t.Name == name {
-			similar = true
+			s = true
 		}
 	}
-	return
+	return s
 }
